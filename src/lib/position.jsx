@@ -12,26 +12,34 @@ export const usePosition = () => useContext(PositionCtx)
 
 export function PositionProvider({ children }) {
   const [real, setReal] = useState(null)
+  const [accuracy, setAccuracy] = useState(null)
   const [sim, setSim] = useState(null)
   const [geoState, setGeoState] = useState('idle') // idle | asking | live | denied | unsupported
   const watchId = useRef(null)
 
   const startWatching = useCallback(() => {
     if (!('geolocation' in navigator)) return setGeoState('unsupported')
+    if (watchId.current != null) return
     setGeoState('asking')
     watchId.current = navigator.geolocation.watchPosition(
       (p) => {
         setReal([p.coords.latitude, p.coords.longitude])
+        setAccuracy(p.coords.accuracy ?? null)
         setGeoState('live')
       },
-      () => setGeoState('denied'),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 12000 },
+      (err) => setGeoState(err.code === err.PERMISSION_DENIED ? 'denied' : 'unavailable'),
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 },
     )
   }, [])
 
   useEffect(
     () => () => {
-      if (watchId.current != null) navigator.geolocation.clearWatch(watchId.current)
+      // Resetting the ref matters: without it the guard in startWatching would
+      // treat the cleared watch as still active and never re-subscribe.
+      if (watchId.current != null) {
+        navigator.geolocation.clearWatch(watchId.current)
+        watchId.current = null
+      }
     },
     [],
   )
@@ -39,6 +47,7 @@ export function PositionProvider({ children }) {
   const value = {
     position: sim ?? real,
     real,
+    accuracy: sim ? null : accuracy,
     sim,
     isSimulated: !!sim,
     geoState,

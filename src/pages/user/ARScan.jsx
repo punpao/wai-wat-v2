@@ -6,18 +6,35 @@ import { BADGES } from '../../data/rewards.js'
 import { storage } from '../../lib/storage.js'
 import { useStore } from '../../lib/useStore.js'
 import { usePosition } from '../../lib/position.jsx'
-import { distanceM, fmtDistance, NEAR_RADIUS_M } from '../../lib/geo.js'
+import {
+  bearing,
+  distanceM,
+  fmtDistance,
+  FOUND_RADIUS_M,
+  hintFor,
+  NEAR_RADIUS_M,
+  relativeAngle,
+} from '../../lib/geo.js'
+import { useHeading } from '../../lib/useHeading.js'
 import ClipPlayer, { ElderReveal } from '../../components/ClipPlayer.jsx'
 import { Button, useToast } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
-/** Simulated hot/cold hints. No CV, no SLAM — a synthetic bearing on a timer. */
-const HINTS = [
+/**
+ * The hunt runs in one of two modes.
+ *
+ * live — real GPS fix plus a real compass heading. The arrow points at the
+ *   checkpoint's true bearing and "ซ้าย/ขวา/ข้างหลัง" is where the explorer
+ *   must actually turn. Still not computer vision: nothing tracks the world
+ *   through the lens, it is sensors plus geometry.
+ * demo — no compass (desktop, denied permission, in-app browser) or a
+ *   simulated position. Synthetic hints on a timer, exactly as before.
+ */
+const SIM_HINTS = [
   { text: 'ซ้าย!', rot: -90 },
   { text: 'ขวา!', rot: 90 },
   { text: 'ข้างหลัง!', rot: 180 },
   { text: 'ตรงไป!', rot: 0 },
-  { text: 'เงยขึ้นอีกนิด!', rot: -45 },
 ]
 
 const heatOf = (v) =>
@@ -32,62 +49,114 @@ export default function ARScan() {
   const cp = checkpointById(checkpointId)
   const elder = cp ? elderById(cp.elderId) : null
 
+  const compass = useHeading()
+
   const [phase, setPhase] = useState('hunting') // hunting | found | clip | reward
-  const [cam, setCam] = useState('starting') // starting | on | off
-  const [heat, setHeat] = useState(100)
-  const [hint, setHint] = useState(HINTS[0])
+  const [cam, setCam] = useState('starting') // starting | on | off | blocked
+  const [camMsg, setCamMsg] = useState('')
+  const [simHeat, setSimHeat] = useState(100)
+  const [simHint, setSimHint] = useState(SIM_HINTS[0])
   const videoRef = useRef(null)
   const streamRef = useRef(null)
   const wasNew = useRef(false)
 
+  const realDist =
+    cp && pos.position ? distanceM(pos.position, [cp.lat, cp.lng]) : null
+
+  // Real tracking needs both halves: a genuine fix and a genuine heading.
+  const liveTracking = !!cp && !pos.isSimulated && realDist != null && compass.isLive
+
+  let hint, heat
+  if (liveTracking) {
+    const delta = relativeAngle(compass.heading, bearing(pos.position, [cp.lat, cp.lng]))
+    hint = hintFor(delta)
+    heat = Math.max(0, Math.min(100, (realDist / NEAR_RADIUS_M) * 100))
+  } else {
+    hint = simHint
+    heat = simHeat
+  }
+
+  const onTarget = liveTracking && realDist <= FOUND_RADIUS_M && Math.abs(hint.rot) <= 45
+
   /* ── camera ── */
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      try {
-        const s = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } },
-          audio: false,
-        })
-        if (cancelled) return s.getTracks().forEach((t) => t.stop())
-        streamRef.current = s
-        if (videoRef.current) videoRef.current.srcObject = s
-        setCam('on')
-      } catch {
-        // Camera blocked or unavailable — the demo continues on a painted backdrop.
-        setCam('off')
+  const startCamera = useCallback(async () => {
+    // getUserMedia only exists on secure origins (https or localhost).
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCam('blocked')
+      setCamMsg(
+        window.isSecureContext
+          ? 'เบราว์เซอร์นี้ไม่รองรับการเปิดกล้อง ลองเปิดด้วย Chrome หรือ Safari'
+          : 'ต้องเปิดผ่าน https จึงจะใช้กล้องได้',
+      )
+      return
+    }
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      })
+      streamRef.current = s
+      if (videoRef.current) {
+        videoRef.current.srcObject = s
+        // iOS Safari does not always autoplay a stream without this nudge.
+        try {
+          await videoRef.current.play()
+        } catch {
+          /* the muted+playsInline video will start on its own */
+        }
       }
-    })()
-    return () => {
-      cancelled = true
-      streamRef.current?.getTracks().forEach((t) => t.stop())
+      setCam('on')
+    } catch (err) {
+      setCam('blocked')
+      setCamMsg(
+        err?.name === 'NotAllowedError'
+          ? 'ยังไม่ได้อนุญาตให้ใช้กล้อง — กดอนุญาตในเบราว์เซอร์แล้วลองอีกครั้ง'
+          : err?.name === 'NotFoundError'
+            ? 'ไม่พบกล้องบนอุปกรณ์นี้'
+            : 'เปิดกล้องไม่ได้ (บางแอปที่เปิดเว็บในตัว เช่น LINE หรือ Facebook ไม่อนุญาต) — ลองเปิดใน Chrome หรือ Safari',
+      )
     }
   }, [])
 
-  /* ── the hunt: heat decays on its own so a demo always converges ── */
   useEffect(() => {
-    if (phase !== 'hunting') return
-    const decay = setInterval(() => setHeat((v) => Math.max(0, v - 3.5)), 500)
+    startCamera()
+    return () => {
+      streamRef.current?.getTracks().forEach((t) => t.stop())
+      streamRef.current = null
+    }
+  }, [startCamera])
+
+  // Keep a live GPS watch running for the whole hunt.
+  useEffect(() => {
+    if (!pos.isSimulated) pos.startWatching()
+  }, [pos])
+
+  /* ── demo hunt: heat decays on its own so a presentation always converges ── */
+  useEffect(() => {
+    if (phase !== 'hunting' || liveTracking) return
+    const decay = setInterval(() => setSimHeat((v) => Math.max(0, v - 3.5)), 500)
     const swap = setInterval(
-      () => setHint(HINTS[Math.floor(Math.random() * HINTS.length)]),
+      () => setSimHint(SIM_HINTS[Math.floor(Math.random() * SIM_HINTS.length)]),
       2200,
     )
     return () => {
       clearInterval(decay)
       clearInterval(swap)
     }
-  }, [phase])
+  }, [phase, liveTracking])
 
+  /* ── found: real arrival, or the demo hunt reaching zero ── */
   useEffect(() => {
-    if (phase === 'hunting' && heat <= 0) {
+    if (phase !== 'hunting') return
+    if (liveTracking ? onTarget : heat <= 0) {
       setPhase('found')
       if (navigator.vibrate) navigator.vibrate([40, 60, 90])
     }
-  }, [heat, phase])
+  }, [phase, liveTracking, onTarget, heat])
 
   const step = () => {
-    setHeat((v) => Math.max(0, v - 22))
-    setHint(HINTS[Math.floor(Math.random() * HINTS.length)])
+    setSimHeat((v) => Math.max(0, v - 22))
+    setSimHint(SIM_HINTS[Math.floor(Math.random() * SIM_HINTS.length)])
   }
 
   const finishClip = useCallback(() => {
@@ -110,7 +179,6 @@ export default function ARScan() {
     )
   }
 
-  const realDist = pos.position ? distanceM(pos.position, [cp.lat, cp.lng]) : null
   const heatInfo = heatOf(heat)
   const found = state.discoveries.find((d) => d.checkpointId === cp.id)
   const earned = BADGES.filter((b) => b.need === state.discoveries.length)
@@ -118,7 +186,7 @@ export default function ARScan() {
   return (
     <div className="relative min-h-dvh overflow-hidden bg-black">
       {/* ── camera feed (or its stand-in) ── */}
-      {cam === 'off' ? (
+      {cam !== 'on' ? (
         <div
           className="absolute inset-0"
           style={{
@@ -153,18 +221,34 @@ export default function ARScan() {
         >
           <Icon name="close" size={20} />
         </button>
-        <div className="rounded-2xl bg-black/45 px-3.5 py-2 text-right ring-1 ring-white/15 backdrop-blur">
+        <div className="max-w-[62%] rounded-2xl bg-black/50 px-3.5 py-2 text-right ring-1 ring-white/15 backdrop-blur">
           <p className="text-[13px] font-semibold text-white">{cp.name}</p>
           <p className="text-[11px] text-lavender300">
-            {pos.isSimulated ? 'ตำแหน่งจำลอง (โหมดสาธิต)' : realDist != null ? `GPS ห่าง ${fmtDistance(realDist)}` : 'ไม่มีสัญญาณ GPS'}
+            {pos.isSimulated
+              ? 'ตำแหน่งจำลอง (โหมดสาธิต)'
+              : realDist != null
+                ? `GPS ห่าง ${fmtDistance(realDist)}${pos.accuracy ? ` · ±${Math.round(pos.accuracy)} ม.` : ''}`
+                : pos.geoState === 'denied'
+                  ? 'ยังไม่ได้อนุญาตตำแหน่ง'
+                  : 'กำลังหาสัญญาณ GPS'}
+          </p>
+          <p className={`text-[11px] font-semibold ${liveTracking ? 'text-gold200' : 'text-lavender300'}`}>
+            {liveTracking ? 'เข็มทิศจริง · ติดตามทิศทางอยู่' : 'ทิศทางจำลอง'}
           </p>
         </div>
       </div>
 
-      {cam === 'off' && phase === 'hunting' && (
-        <p className="absolute inset-x-0 top-24 z-30 mx-auto max-w-xs rounded-2xl bg-black/50 px-4 py-2.5 text-center text-xs leading-relaxed text-lavender300 ring-1 ring-white/15">
-          ไม่ได้เปิดกล้อง จึงแสดงพื้นหลังจำลองแทน — ขั้นตอนอื่นทำงานตามปกติ
-        </p>
+      {cam === 'blocked' && phase === 'hunting' && (
+        <div className="absolute inset-x-0 top-24 z-30 mx-auto max-w-xs rounded-2xl bg-black/60 px-4 py-3 text-center ring-1 ring-white/15">
+          <p className="text-xs leading-relaxed text-lavender300">{camMsg}</p>
+          <button
+            onClick={startCamera}
+            className="mt-2 min-h-[40px] cursor-pointer rounded-full bg-white/15 px-4 text-xs font-semibold text-white hover:bg-white/25"
+          >
+            ลองเปิดกล้องอีกครั้ง
+          </button>
+          <p className="mt-2 text-[11px] text-lavender300">ขั้นตอนอื่นยังทำงานได้ตามปกติ</p>
+        </div>
       )}
 
       {/* ── phase: hunting ── */}
@@ -184,7 +268,9 @@ export default function ARScan() {
               />
             </div>
             <div
-              className="grid h-28 w-28 place-items-center rounded-full transition-transform duration-500"
+              className={`grid h-28 w-28 place-items-center rounded-full ${
+                liveTracking ? 'transition-transform duration-150' : 'transition-transform duration-500'
+              }`}
               style={{ transform: `rotate(${hint.rot}deg)` }}
             >
               <svg width="70" height="70" viewBox="0 0 70 70" aria-hidden="true">
@@ -225,14 +311,51 @@ export default function ARScan() {
               />
             </div>
             <p className="mt-2 text-center text-xs text-lavender300">
-              กวาดกล้องไปตามลูกศร แล้วกดยืนยันเมื่อหันไปทางนั้นแล้ว
+              {liveTracking
+                ? `หันตัวตามลูกศร แล้วเดินต่อจนเหลือไม่เกิน ${FOUND_RADIUS_M} เมตร`
+                : 'กวาดกล้องไปตามลูกศร แล้วกดยืนยันเมื่อหันไปทางนั้นแล้ว'}
             </p>
           </div>
 
-          <Button size="lg" className="mt-5 w-full max-w-xs" onClick={step}>
-            <Icon name="compass" size={20} />
-            หันไปทาง{hint.text.replace('!', '')}แล้ว
-          </Button>
+          {liveTracking ? (
+            <div className="mt-5 w-full max-w-xs text-center">
+              <p className="font-display text-3xl text-white">{fmtDistance(realDist)}</p>
+              <p className="mt-1 text-xs text-lavender300">
+                เหลืออีกเท่านี้ถึงจุดตรวจ · ลูกศรชี้ตามเข็มทิศจริงของเครื่อง
+              </p>
+              <button
+                onClick={() => pos.simulateNear(cp)}
+                className="mt-4 min-h-[44px] w-full cursor-pointer rounded-full border border-gold200/35 text-sm font-semibold text-gold200 transition-colors hover:bg-gold200/10"
+              >
+                ข้ามไปโหมดสาธิตแทน
+              </button>
+            </div>
+          ) : (
+            <>
+              {compass.state === 'needs-permission' && !pos.isSimulated && (
+                <button
+                  onClick={compass.request}
+                  className="mt-5 flex min-h-[48px] w-full max-w-xs cursor-pointer items-center justify-center gap-2 rounded-full border border-gold200/45 text-sm font-semibold text-gold200 transition-colors hover:bg-gold200/10"
+                >
+                  <Icon name="compass" size={18} />
+                  เปิดเข็มทิศ เพื่อชี้ทิศทางจริง
+                </button>
+              )}
+              <Button size="lg" className="mt-4 w-full max-w-xs" onClick={step}>
+                <Icon name="compass" size={20} />
+                หันไปทาง{hint.text.replace('!', '')}แล้ว
+              </Button>
+              <p className="mt-3 max-w-xs text-center text-[11px] leading-relaxed text-lavender300">
+                {pos.isSimulated
+                  ? 'กำลังใช้ตำแหน่งจำลองจากโหมดสาธิต'
+                  : compass.state === 'denied'
+                    ? 'ไม่ได้อนุญาตให้ใช้เข็มทิศ จึงใช้ทิศทางจำลองแทน'
+                    : compass.state === 'unsupported'
+                      ? 'อุปกรณ์นี้ไม่มีเข็มทิศ (เช่น คอมพิวเตอร์) จึงใช้ทิศทางจำลองแทน'
+                      : 'กำลังรอสัญญาณเข็มทิศ'}
+              </p>
+            </>
+          )}
         </div>
       )}
 
