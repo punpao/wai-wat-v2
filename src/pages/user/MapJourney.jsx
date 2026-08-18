@@ -10,6 +10,7 @@ import ExplorerMap from '../../components/ExplorerMap.jsx'
 import { ElderAvatar } from '../../components/ElderSprite.jsx'
 import { Button, Eyebrow, OrbitDecor, Sheet, StatPill } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
+import Select from '../../components/Select.jsx'
 
 export default function MapJourney() {
   const state = useStore()
@@ -42,7 +43,9 @@ export default function MapJourney() {
   return (
     <div className="relative mx-auto max-w-6xl lg:grid lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-6 lg:px-6 lg:pt-4">
       {/* ── Trail picker ── */}
-      <section className="relative overflow-hidden px-4 pb-3 pt-4 lg:col-start-1 lg:row-start-1 lg:px-0">
+      {/* no overflow-hidden here: it would clip the trail dropdown. OrbitDecor
+          clips its own flourishes. */}
+      <section className="relative px-4 pb-3 pt-4 lg:col-start-1 lg:row-start-1 lg:px-0">
         <OrbitDecor />
         <div className="relative mx-auto max-w-2xl lg:max-w-none">
           <Eyebrow>เลือกเส้นทาง</Eyebrow>
@@ -53,30 +56,25 @@ export default function MapJourney() {
             เลือกย่านที่อยากไป แล้วออกเดินหาจุดตรวจ เมื่อถึงจุด ผู้สูงอายุในย่านนั้นจะมาเล่าให้ฟังเอง
           </p>
 
-          <label htmlFor="trail-select" className="sr-only">
+          <span id="trail-select-label" className="sr-only">
             เลือกย่านหรือเส้นทาง
-          </label>
-          <div className="relative mt-3">
-            <select
-              id="trail-select"
+          </span>
+          <div className="mt-3">
+            <Select
+              labelledBy="trail-select-label"
+              placeholder="เลือกย่านที่อยากไป"
               value={locId}
-              onChange={(e) => {
-                setLocId(e.target.value)
+              onChange={(v) => {
+                setLocId(v)
                 setActive(null)
               }}
-              className="w-full cursor-pointer appearance-none rounded-2xl border border-white/18 bg-[#3A1244]/85 px-4 py-3.5 pr-12 text-[15px] font-medium text-white outline-none transition-colors hover:border-gold200/50"
-            >
-              <option value="">— ยังไม่ได้เลือกเส้นทาง —</option>
-              {LOCATIONS.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name} · {l.checkpoints.length} จุด
-                </option>
-              ))}
-            </select>
-            <Icon
-              name="chevronDown"
-              size={20}
-              className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-gold200"
+              options={LOCATIONS.map((l) => ({
+                value: l.id,
+                label: l.name,
+                hint: l.tagline,
+                badge: `${l.checkpoints.length} จุด`,
+                icon: 'compass',
+              }))}
             />
           </div>
 

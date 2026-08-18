@@ -6,6 +6,8 @@ import { useStore } from '../../lib/useStore.js'
 import { BigButton, PaperCard, SectionTitle } from '../../components/elderUI.jsx'
 import ElderSprite from '../../components/ElderSprite.jsx'
 import Icon from '../../components/Icon.jsx'
+import Select from '../../components/Select.jsx'
+import { ElderAvatar } from '../../components/ElderSprite.jsx'
 import { thaiDate } from '../../components/ui.jsx'
 
 export default function ElderHome() {
@@ -101,21 +103,24 @@ export default function ElderHome() {
 
       {/* ── Demo-only identity switch ── */}
       <section className="mt-8 rounded-2xl border border-dashed border-maroon900/25 p-4">
-        <label htmlFor="elder-pick" className="block text-[15px] font-semibold text-maroon900/75">
+        <span id="elder-pick-label" className="block text-[15px] font-semibold text-maroon900/75">
           สำหรับสาธิต · เข้าใช้งานในชื่อผู้สูงอายุท่านอื่น
-        </label>
-        <select
-          id="elder-pick"
-          value={state.elderId}
-          onChange={(e) => storage.setElder(e.target.value)}
-          className="mt-2 min-h-[56px] w-full cursor-pointer rounded-xl border-2 border-maroon900/20 bg-white px-4 text-[17px] text-maroon900"
-        >
-          {ELDERS.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name} · {e.area}
-            </option>
-          ))}
-        </select>
+        </span>
+        <div className="mt-2">
+          <Select
+            labelledBy="elder-pick-label"
+            size="lg"
+            tone="onPaper"
+            value={state.elderId}
+            onChange={(v) => storage.setElder(v)}
+            options={ELDERS.map((e) => ({
+              value: e.id,
+              label: e.name,
+              hint: e.area,
+              leading: <ElderAvatar elder={e} size={40} />,
+            }))}
+          />
+        </div>
       </section>
     </div>
   )
