@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+/* ─────────────────────────────────────────────────────────────
+   วัยวัฒน์ (Wai-Wat) — theme tokens
+   Brand palette sampled from the Moral Hackathon 2026 poster
+   (see CI guide). Treat these as the single source of truth.
+   The two `paper` tints are the only derived values: they exist
+   because the Elder register needs a light, high-contrast
+   surface that the dark poster palette does not provide.
+   ───────────────────────────────────────────────────────────── */
+@theme {
+  --color-maroon900: #5C1432;
+  --color-violet800: #501D65;
+  --color-violet600: #653877;
+  --color-lavender300: #B38CC0;
+  --color-pink400: #F16C95;
+  --color-gold200: #FFD3A2;
+  --color-gold100: #FFC99B;
+  --color-coral500: #D9502F;
+
+  /* derived paper tints — Elder register only */
+  --color-paper: #FFF4E9;
+  --color-paperdeep: #F6E2CC;
+
+  --font-display: 'Archivo Black', system-ui, sans-serif;
+  --font-sans: 'Kanit', system-ui, -apple-system, sans-serif;
+
+  --radius-card: 1.25rem;
+}
+
+:root {
+  --gradient-hero: linear-gradient(135deg, #5C1432 0%, #501D65 55%, #653877 100%);
+  color-scheme: dark;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: #3D1440;
+  color: #fff;
+  overscroll-behavior-y: none;
+}
+
+/* ── Signature motif: เส้นทางภูมิปัญญา (the wisdom trail) ──
+   A dotted orbit lifted from the poster. It is reused as the
+   route between checkpoints, the AR radar sweep, and the Elder
+   progress ring — one motif doing three jobs. */
+.orbit-ring {
+  border-radius: 9999px;
+  border: 1.5px dashed rgba(255, 211, 162, 0.35);
+}
+
+.stripe-edge {
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgba(255, 211, 162, 0.14) 0px,
+    rgba(255, 211, 162, 0.14) 2px,
+    transparent 2px,
+    transparent 11px
+  );
+}
+
+.glass {
+  background: color-mix(in srgb, #653877 55%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.gold-number {
+  background: linear-gradient(100deg, #FFD3A2 0%, #FFC99B 60%, #F16C95 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+/* focus visibility — never removed, only restyled */
+:focus-visible {
+  outline: 3px solid var(--color-gold200);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@keyframes sweep { to { transform: rotate(360deg); } }
+@keyframes pulsering {
+  0%   { transform: scale(0.55); opacity: 0.9; }
+  100% { transform: scale(1.7);  opacity: 0; }
+}
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-9px); }
+}
+@keyframes risein {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes toastin {
+  from { opacity: 0; transform: translateY(-12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes dash { to { stroke-dashoffset: -28; } }
+
+.anim-sweep   { animation: sweep 3.4s linear infinite; }
+.anim-ring    { animation: pulsering 2.4s ease-out infinite; }
+.anim-floaty  { animation: floaty 3.6s ease-in-out infinite; }
+.anim-risein  { animation: risein .38s cubic-bezier(.2,.7,.3,1) both; }
+.anim-toast   { animation: toastin .25s cubic-bezier(.2,.7,.3,1) both; }
+.anim-dash    { animation: dash 1.6s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .anim-sweep, .anim-ring, .anim-floaty, .anim-risein, .anim-toast, .anim-dash {
+    animation: none !important;
+  }
+  * { transition-duration: 1ms !important; }
+}
+
+/* ── Leaflet skin ── */
+.leaflet-container { background: #2B0F30; font-family: var(--font-sans); }
+.leaflet-control-attribution {
+  background: rgba(80, 29, 101, .82) !important;
+  color: #B38CC0 !important;
+  font-size: 10px !important;
+}
+.leaflet-control-attribution a { color: #FFD3A2 !important; }
+.leaflet-bar a {
+  background: #501D65 !important;
+  color: #FFD3A2 !important;
+  border-color: rgba(255,255,255,.15) !important;
+}
+.leaflet-bar a:hover { background: #653877 !important; }
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: #501D65; color: #fff; border: 1px solid rgba(255,255,255,.14);
+}
+.leaflet-popup-content { margin: 10px 12px; font-family: var(--font-sans); }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Elder register: larger base type, warm paper surface ── */
+.elder-scope { font-size: 18px; line-height: 1.65; }
+.elder-scope h1 { line-height: 1.3; }
