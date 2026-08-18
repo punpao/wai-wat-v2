@@ -12,7 +12,7 @@ export default function ElderSprite({ elder, size = 200, talking = false, classN
       height={size * 1.25}
       className={className}
       role="img"
-      aria-label={`ภาพประกอบของ${elder?.name ?? 'ผู้เฒ่า'}`}
+      aria-label={`ภาพประกอบของ${elder?.name ?? 'ผู้สูงอายุ'}`}
     >
       <defs>
         <radialGradient id="ws-glow" cx="50%" cy="62%" r="52%">

@@ -37,10 +37,18 @@ export default function AppHeader() {
           </svg>
         </span>
         <div className="min-w-0">
-          <p className={`truncate text-[17px] font-semibold leading-tight ${isElder ? 'text-maroon900' : 'text-white'}`}>
+          <p
+            className={`truncate text-[17px] font-semibold leading-tight max-[380px]:text-[15px] ${
+              isElder ? 'text-maroon900' : 'text-white'
+            }`}
+          >
             วัยวัฒน์
           </p>
-          <p className={`truncate text-[11px] leading-tight ${isElder ? 'text-maroon900/60' : 'text-lavender300'}`}>
+          <p
+            className={`truncate text-[11px] leading-tight max-[360px]:hidden ${
+              isElder ? 'text-maroon900/60' : 'text-lavender300'
+            }`}
+          >
             {isElder ? elder?.name : 'เส้นทางภูมิปัญญา'}
           </p>
         </div>
@@ -55,7 +63,7 @@ export default function AppHeader() {
       >
         {[
           { id: 'user', label: 'ผู้สำรวจ', icon: 'compass' },
-          { id: 'elder', label: 'ผู้เฒ่า', icon: 'user' },
+          { id: 'elder', label: 'ผู้สูงอายุ', icon: 'user' },
         ].map((r) => {
           const on = (r.id === 'elder') === isElder
           return (
@@ -63,7 +71,7 @@ export default function AppHeader() {
               key={r.id}
               onClick={() => swap(r.id)}
               aria-pressed={on}
-              className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-semibold transition-colors duration-200 ${
+              className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3 py-2 text-[13px] font-semibold transition-colors duration-200 max-[380px]:gap-1 max-[380px]:px-2.5 max-[380px]:text-[12px] ${
                 on
                   ? 'bg-coral500 text-white'
                   : isElder

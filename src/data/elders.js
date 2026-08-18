@@ -1,5 +1,5 @@
 /**
- * ผู้เฒ่าผู้ให้ความรู้ (Elder contributors) — mock data.
+ * ผู้สูงอายุผู้ให้ความรู้ (Elder contributors) — mock data.
  * `sprite` picks the illustrated character variant in <ElderSprite />.
  */
 export const ELDERS = [

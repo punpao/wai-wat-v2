@@ -50,7 +50,7 @@ export default function MapJourney() {
             เดินตามรอย <span className="text-gold200">คนที่ยังจำเรื่องนั้นได้</span>
           </h1>
           <p className="mt-1.5 hidden max-w-md text-sm leading-relaxed text-lavender300 sm:block">
-            เลือกย่านที่อยากไป แล้วออกเดินหาจุดตรวจ เมื่อถึงจุด ผู้เฒ่าในย่านนั้นจะมาเล่าให้ฟังเอง
+            เลือกย่านที่อยากไป แล้วออกเดินหาจุดตรวจ เมื่อถึงจุด ผู้สูงอายุในย่านนั้นจะมาเล่าให้ฟังเอง
           </p>
 
           <label htmlFor="trail-select" className="sr-only">
@@ -260,7 +260,7 @@ export default function MapJourney() {
               onClick={() => navigate(`/scan/${active.id}`)}
             >
               <Icon name="scan" size={20} />
-              เริ่มสแกนหาผู้เฒ่า
+              เริ่มสแกนหาผู้สูงอายุ
             </Button>
 
             {!nearEnough && (

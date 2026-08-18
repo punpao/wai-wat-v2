@@ -69,7 +69,7 @@ export default function Profile() {
               {
                 icon: 'ear',
                 value: new Set(state.discoveries.map((d) => d.elderId)).size,
-                label: 'ผู้เฒ่าที่ได้ฟัง',
+                label: 'ผู้สูงอายุที่ได้ฟัง',
               },
             ].map((s) => (
               <div key={s.label} className="glass flex flex-col items-center rounded-2xl px-3 py-3.5">

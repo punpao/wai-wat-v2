@@ -303,7 +303,7 @@ export default function ARScan() {
               aria-valuenow={Math.round(100 - heat)}
               aria-valuemin={0}
               aria-valuemax={100}
-              aria-label="ความใกล้ผู้เฒ่า"
+              aria-label="ความใกล้ผู้สูงอายุ"
             >
               <div
                 className="h-full rounded-full transition-[width] duration-300"
@@ -364,7 +364,7 @@ export default function ARScan() {
         <div className="anim-risein relative z-20 flex min-h-dvh flex-col items-center justify-center px-6 pb-28 pt-24 text-center">
           <ElderReveal elder={elder} talking={false} />
           <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.22em] text-gold200">
-            พบผู้เฒ่าแล้ว
+            พบผู้สูงอายุแล้ว
           </p>
           <h2 className="mt-2 text-2xl font-semibold">{elder?.name}</h2>
           <p className="mt-1.5 max-w-xs text-sm leading-relaxed text-lavender300">{elder?.craft}</p>

@@ -102,7 +102,7 @@ export default function ElderHome() {
       {/* ── Demo-only identity switch ── */}
       <section className="mt-8 rounded-2xl border border-dashed border-maroon900/25 p-4">
         <label htmlFor="elder-pick" className="block text-[15px] font-semibold text-maroon900/75">
-          สำหรับสาธิต · เข้าใช้งานในชื่อผู้เฒ่าท่านอื่น
+          สำหรับสาธิต · เข้าใช้งานในชื่อผู้สูงอายุท่านอื่น
         </label>
         <select
           id="elder-pick"

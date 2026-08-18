@@ -61,7 +61,7 @@ export default function EncourageBox({ clip, elder, checkpointName, onSent }) {
     send(text, 'comment')
     setMsg('')
     setWriting(false)
-    toast('ส่งข้อความถึงผู้เฒ่าแล้ว', 'good')
+    toast('ส่งข้อความถึงผู้สูงอายุแล้ว', 'good')
   }
 
   const shareToLine = () => {
@@ -81,7 +81,7 @@ export default function EncourageBox({ clip, elder, checkpointName, onSent }) {
     <div className="space-y-3 text-left">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-semibold text-white">
-          บอก{elder?.short ?? 'ผู้เฒ่า'}หน่อยว่าคุณคิดยังไง
+          บอก{elder?.short ?? 'ผู้สูงอายุ'}หน่อยว่าคุณคิดยังไง
         </p>
         {notes > 0 && (
           <span className="shrink-0 text-[11px] font-semibold text-gold200">
@@ -117,7 +117,7 @@ export default function EncourageBox({ clip, elder, checkpointName, onSent }) {
       {writing ? (
         <div className="space-y-2.5">
           <label htmlFor="cheer-msg" className="sr-only">
-            เขียนข้อความถึงผู้เฒ่า
+            เขียนข้อความถึงผู้สูงอายุ
           </label>
           <textarea
             id="cheer-msg"
