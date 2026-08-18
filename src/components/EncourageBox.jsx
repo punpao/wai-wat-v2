@@ -38,7 +38,7 @@ export default function EncourageBox({ clip, elder, checkpointName, onSent }) {
   const toast = useToast()
   const [tapped, setTapped] = useState([])
   const [msg, setMsg] = useState('')
-  const [writing, setWriting] = useState(false)
+  const [liked, setLiked] = useState(false)
   const [notes, setNotes] = useState(0)
 
   const send = (text, kind) => {
@@ -60,8 +60,13 @@ export default function EncourageBox({ clip, elder, checkpointName, onSent }) {
     if (!text) return
     send(text, 'comment')
     setMsg('')
-    setWriting(false)
     toast('ส่งข้อความถึงผู้สูงอายุแล้ว', 'good')
+  }
+
+  const toggleLike = () => {
+    const next = !liked
+    setLiked(next)
+    storage.likeClip(clip.id, next)
   }
 
   const shareToLine = () => {
@@ -90,8 +95,21 @@ export default function EncourageBox({ clip, elder, checkpointName, onSent }) {
         )}
       </div>
 
-      {/* fast path: one tap, one real message */}
+      {/* ถูกใจ กับชิปข้อความ อยู่แถวเดียวกัน กดครั้งเดียวจบทั้งคู่ */}
       <div className="flex flex-wrap gap-2">
+        <button
+          onClick={toggleLike}
+          aria-pressed={liked}
+          className={`flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full px-4 text-[13px] font-semibold transition-colors ${
+            liked
+              ? 'bg-coral500 text-white'
+              : 'bg-coral500/20 text-white ring-1 ring-coral500/60 hover:bg-coral500/35'
+          }`}
+        >
+          <Icon name="heart" size={17} filled={liked} />
+          {liked ? 'ถูกใจแล้ว' : 'ถูกใจ'}
+        </button>
+
         {REACTIONS.map((r) => {
           const on = tapped.includes(r.id)
           return (
@@ -113,49 +131,35 @@ export default function EncourageBox({ clip, elder, checkpointName, onSent }) {
         })}
       </div>
 
-      {/* slower path: say it in your own words */}
-      {writing ? (
-        <div className="space-y-2.5">
-          <label htmlFor="cheer-msg" className="sr-only">
-            เขียนข้อความถึงผู้สูงอายุ
-          </label>
-          <textarea
-            id="cheer-msg"
-            rows={3}
-            autoFocus
-            value={msg}
-            onChange={(e) => setMsg(e.target.value)}
-            placeholder="เช่น ฟังแล้วนึกถึงคุณยายเลยครับ"
-            className="w-full resize-none rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-[15px] leading-relaxed text-white outline-none transition-colors placeholder:text-white/35 focus:border-gold200/60"
-          />
-          <div className="flex gap-2">
-            <Button size="sm" className="flex-1" disabled={!msg.trim()} onClick={sendMessage}>
-              <Icon name="send" size={16} />
-              ส่งข้อความ
-            </Button>
-            <Button size="sm" variant="quiet" onClick={() => setWriting(false)}>
-              ยกเลิก
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex gap-2">
-          <button
-            onClick={() => setWriting(true)}
-            className="flex min-h-[44px] flex-1 cursor-pointer items-center justify-center gap-2 rounded-full border border-white/18 text-[13px] font-semibold text-white transition-colors hover:bg-white/10"
-          >
-            <Icon name="quote" size={16} />
-            เขียนข้อความเอง
-          </button>
-          <button
-            onClick={shareToLine}
-            className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full border border-white/18 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-white/10"
-          >
-            <Icon name="spark" size={16} />
-            LINE
-          </button>
-        </div>
-      )}
+      {/* ช่องพิมพ์เปิดไว้เลย ไม่ต้องกดเปิดก่อน */}
+      <div>
+        <label htmlFor="cheer-msg" className="sr-only">
+          เขียนข้อความถึงผู้สูงอายุ
+        </label>
+        <textarea
+          id="cheer-msg"
+          rows={3}
+          value={msg}
+          onChange={(e) => setMsg(e.target.value)}
+          placeholder="เขียนถึงท่านสักหน่อย เช่น ฟังแล้วนึกถึงคุณยายเลยครับ"
+          className="w-full resize-none rounded-2xl border border-white/15 bg-black/30 px-4 py-3 text-[15px] leading-relaxed text-white outline-none transition-colors placeholder:text-white/35 focus:border-gold200/60"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <Button size="sm" className="flex-1" disabled={!msg.trim()} onClick={sendMessage}>
+          <Icon name="send" size={16} />
+          ส่งข้อความ
+        </Button>
+        <button
+          onClick={shareToLine}
+          className="flex min-h-[44px] cursor-pointer items-center justify-center gap-2 rounded-full border border-white/18 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-white/10"
+        >
+          <Icon name="spark" size={16} />
+          LINE
+        </button>
+      </div>
+
     </div>
   )
 }

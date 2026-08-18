@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="วัยวัฒน์">
+  <defs>
+    <linearGradient id="wwBadge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6E0A26"/>
+      <stop offset=".48" stop-color="#5A1450"/>
+      <stop offset="1" stop-color="#4A2A8E"/>
+    </linearGradient>
+    <linearGradient id="wwHead" x1=".08" y1=".2" x2=".92" y2=".8">
+      <stop offset="0" stop-color="#F79155"/>
+      <stop offset=".34" stop-color="#F9AC6C"/>
+      <stop offset=".52" stop-color="#FDC98D"/>
+      <stop offset=".68" stop-color="#FFDCA6"/>
+      <stop offset="1" stop-color="#FFE6B8"/>
+    </linearGradient>
+    <linearGradient id="wwBun" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFE6BA"/>
+      <stop offset=".54" stop-color="#FFD59B"/>
+      <stop offset="1" stop-color="#F8BE6C"/>
+    </linearGradient>
+    <clipPath id="wwHeadClip">
+      <path d="M256 110c71 0 126 55 126 126 0 56-30 114-62 156-25 33-52 60-64 76-12-16-39-43-64-76-32-42-62-100-62-156 0-71 55-126 126-126Z"/>
+    </clipPath>
+  </defs>
+
+  <rect width="512" height="512" rx="118" fill="url(#wwBadge)"/>
+
+  <!-- มวยผม -->
+  <rect x="216" y="44" width="80" height="78" rx="39" fill="url(#wwBun)"/>
+  <path d="M216 98c11-9 25-13 40-13s29 4 40 13v14H216Z" fill="#F4703F"/>
+
+  <!-- ศีรษะ ทรงหยดน้ำ อ่านได้ทั้งใบหน้าและหมุดปักแผนที่ -->
+  <path d="M256 110c71 0 126 55 126 126 0 56-30 114-62 156-25 33-52 60-64 76-12-16-39-43-64-76-32-42-62-100-62-156 0-71 55-126 126-126Z" fill="url(#wwHead)"/>
+
+  <g clip-path="url(#wwHeadClip)">
+    <!-- ผมบางบนศีรษะ เหลือไว้แถบเดียวตามขอบ -->
+    <path d="M130 214c6-58 46-104 104-104 62 0 104 40 110 96-14-22-30-42-62-46-30-4-48 6-76 8-32 2-56 14-76 46Z" fill="#FFE7BC" opacity=".92"/>
+    <ellipse cx="182" cy="286" rx="30" ry="22" fill="#F2794F" opacity=".3"/>
+    <ellipse cx="332" cy="286" rx="30" ry="22" fill="#F2794F" opacity=".22"/>
+  </g>
+
+  <!-- ใบหู -->
+  <ellipse cx="132" cy="248" rx="25" ry="34" fill="#F79E68"/>
+  <ellipse cx="380" cy="248" rx="25" ry="34" fill="#FCC58E"/>
+
+  <!-- ริ้วรอยบนหน้าผาก : อายุคือสิ่งที่อวด ไม่ใช่สิ่งที่ลบ -->
+  <g fill="none" stroke="#F4795A" stroke-width="9" stroke-linecap="round">
+    <path d="M209 162c15-6 29-2 44 0 15 2 29-4 44-8"/>
+    <path d="M206 190c16-6 30-1 47 1 16 2 30-5 45-8"/>
+  </g>
+
+  <!-- คิ้ว -->
+  <g fill="none" stroke="#F4795A" stroke-width="11" stroke-linecap="round">
+    <path d="M181 224c15-12 36-13 51-2"/>
+    <path d="M280 222c16-10 37-7 51 5"/>
+  </g>
+
+  <!-- ตายิ้มหลับ -->
+  <g fill="none" stroke="#5C1432" stroke-width="16" stroke-linecap="round">
+    <path d="M183 254c14-15 36-15 50 1"/>
+    <path d="M279 254c14-15 36-15 50 1"/>
+  </g>
+
+  <!-- จมูก -->
+  <path d="M256 250c9 15 13 30 11 43-2 11-15 15-24 10" fill="none" stroke="#5C1432" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- รอยยิ้ม -->
+  <path d="M205 320c28 22 66 22 94 0" fill="none" stroke="#5C1432" stroke-width="16" stroke-linecap="round"/>
+  <g fill="none" stroke="#F4795A" stroke-width="9" stroke-linecap="round">
+    <path d="M198 302c10-6 13-15 10-24"/>
+    <path d="M314 302c-10-6-13-15-10-24"/>
+    <path d="M234 350c14 5 30 5 44 0"/>
+  </g>
+
+  <!-- หมุดปักแผนที่ : จุดหมายที่ต้องเดินไปหา -->
+  <g transform="rotate(-8 256 412)">
+    <path d="M209 372l96-33-28 99-19 71Z" fill="#A6403C"/>
+    <path d="M209 372l96-33-47 33-19 71Z" fill="#F1694A"/>
+    <circle cx="250" cy="384" r="14" fill="#FFEAC8"/>
+  </g>
+</svg>

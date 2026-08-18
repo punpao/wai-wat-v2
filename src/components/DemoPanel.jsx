@@ -33,11 +33,11 @@ export default function DemoPanel() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label="เปิดแผงโหมดสาธิต"
-        className="fixed bottom-24 right-4 z-[1100] flex min-h-[48px] cursor-pointer items-center gap-2 rounded-full border border-gold200/45 bg-[#2E0F35]/90 px-4 py-3 text-[13px] font-semibold text-gold200 shadow-lg shadow-black/40 backdrop-blur transition-colors hover:bg-[#3B1444]"
+        className="fixed bottom-24 right-4 z-[1100] flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border border-gold200/30 bg-[#2E0F35]/85 px-3.5 py-2.5 text-[12px] font-semibold text-gold200/90 shadow-lg shadow-black/35 backdrop-blur transition-colors hover:bg-[#3B1444] hover:text-gold200"
         style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
       >
-        <Icon name="sliders" size={17} />
-        โหมดสาธิต
+        <Icon name="sliders" size={16} />
+        เลือกจุด
       </button>
 
       {open && (

@@ -30,12 +30,13 @@ export default function AppHeader() {
       style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
     >
       <div className="flex min-w-0 items-center gap-2.5">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-violet800 ring-1 ring-gold200/35">
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-            <path d="M12 4 21 12h-2.6v8H5.6v-8H3L12 4Z" fill="#FFD3A2" />
-            <circle cx="12" cy="15" r="2.4" fill="#D9502F" />
-          </svg>
-        </span>
+        <img
+          src="/logo.svg"
+          alt=""
+          width="40"
+          height="40"
+          className="h-10 w-10 shrink-0 rounded-xl ring-1 ring-gold200/30"
+        />
         <div className="min-w-0">
           <p
             className={`truncate text-[17px] font-semibold leading-tight max-[380px]:text-[15px] ${

@@ -128,6 +128,20 @@ export const storage = {
     })
   },
 
+  /** ถูกใจ — a like on its own, with no message attached. */
+  likeClip(clipId, on = true) {
+    return update((s) => {
+      const stat = s.clipStats[clipId]
+      if (!stat) return s
+      stat.likes = Math.max(0, stat.likes + (on ? 1 : -1))
+      if (on) {
+        s.elderWallet.balance += 2
+        s.elderWallet.earnedTotal += 2
+      }
+      return s
+    })
+  },
+
   redeem(reward) {
     return update((s) => {
       if (s.elderWallet.balance < reward.cost) return s
