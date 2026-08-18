@@ -2,16 +2,15 @@ import { useMemo, useState } from 'react'
 import { checkpointById } from '../../data/locations.js'
 import { elderById } from '../../data/elders.js'
 import { BADGES, levelFor, nextLevel } from '../../data/rewards.js'
-import { storage } from '../../lib/storage.js'
 import { useStore } from '../../lib/useStore.js'
 import ClipPlayer from '../../components/ClipPlayer.jsx'
+import EncourageBox from '../../components/EncourageBox.jsx'
 import { ElderAvatar } from '../../components/ElderSprite.jsx'
-import { Button, Card, Eyebrow, OrbitDecor, Sheet, thaiDate, useToast } from '../../components/ui.jsx'
+import { Button, Card, Eyebrow, OrbitDecor, Sheet, thaiDate } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
 export default function Profile() {
   const state = useStore()
-  const toast = useToast()
   const [replay, setReplay] = useState(null)
   const [cheer, setCheer] = useState(null)
 
@@ -146,9 +145,14 @@ export default function Profile() {
                   </div>
 
                   {h.comments?.length > 0 && (
-                    <p className="mt-3 rounded-xl bg-black/25 px-3 py-2 text-xs leading-relaxed text-white/70">
-                      ข้อความที่คุณส่งไป: “{h.comments[0].text}”
-                    </p>
+                    <div className="mt-3 rounded-xl bg-black/25 px-3 py-2">
+                      <p className="text-[11px] font-semibold text-gold200">
+                        คุณส่งไปแล้ว {h.comments.length} ข้อความ
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-white/70">
+                        ล่าสุด: “{h.comments[0].text}”
+                      </p>
+                    </div>
                   )}
 
                   <div className="mt-3 flex flex-wrap gap-2">
@@ -179,41 +183,12 @@ export default function Profile() {
       </Sheet>
 
       {/* ── Encouragement ── */}
-      <EncourageSheet
-        entry={cheer}
-        onClose={() => setCheer(null)}
-        onSent={(msg) => {
-          storage.sendEncouragement({ clipId: cheer.cp.clip.id, text: msg })
-          toast('ส่งกำลังใจแล้ว ผู้เฒ่าจะเห็นข้อความนี้ในหน้าคลิปของฉัน', 'good')
-          setCheer(null)
-        }}
-        onLineFallback={(m) => toast(m, 'warn')}
-      />
+      <EncourageSheet entry={cheer} onClose={() => setCheer(null)} />
     </div>
   )
 }
 
-const QUICK = [
-  'ฟังแล้วอบอุ่นใจมากครับ ขอบคุณที่เล่าเก็บไว้',
-  'ความรู้แบบนี้หาฟังที่ไหนไม่ได้แล้วค่ะ',
-  'เดี๋ยวจะพาเพื่อนมาฟังอีกครับ',
-]
-
-function EncourageSheet({ entry, onClose, onSent, onLineFallback }) {
-  const [msg, setMsg] = useState('')
-
-  const shareToLine = () => {
-    const text = `ผมได้ฟังเรื่อง “${entry.cp.clip.title}” จาก${entry.elder?.name} ที่${entry.cp.name} ผ่านแอปวัยวัฒน์\n${msg || 'ขอบคุณที่เก็บเรื่องนี้ไว้ให้คนรุ่นหลังนะครับ'}`
-    const url = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`
-    // No backend and no LINE Messaging API — this is the share URL scheme,
-    // which needs neither. If the browser blocks it, fall back to clipboard.
-    const win = window.open(url, '_blank', 'noopener,noreferrer')
-    if (!win) {
-      navigator.clipboard?.writeText(text)
-      onLineFallback('เปิด LINE ไม่ได้บนเครื่องนี้ — คัดลอกข้อความไว้ให้แล้ว')
-    }
-  }
-
+function EncourageSheet({ entry, onClose }) {
   return (
     <Sheet open={!!entry} onClose={onClose} title="ส่งกำลังใจ" labelledBy="cheer-title">
       {entry && (
@@ -225,46 +200,14 @@ function EncourageSheet({ entry, onClose, onSent, onLineFallback }) {
               <p className="truncate text-xs text-lavender300">{entry.cp.clip.title}</p>
             </div>
           </div>
-
-          <div>
-            <label htmlFor="cheer-msg" className="mb-1.5 block text-sm font-medium">
-              เขียนข้อความถึงท่าน
-            </label>
-            <textarea
-              id="cheer-msg"
-              rows={3}
-              value={msg}
-              onChange={(e) => setMsg(e.target.value)}
-              placeholder="เช่น ฟังแล้วนึกถึงคุณยายเลยครับ"
-              className="w-full resize-none rounded-2xl border border-white/15 bg-black/25 px-4 py-3 text-[15px] leading-relaxed outline-none transition-colors placeholder:text-white/35 focus:border-gold200/60"
-            />
-            <p className="mt-1.5 text-xs text-lavender300">
-              ข้อความจะไปปรากฏในหน้า “คลิปของฉัน” ของผู้เฒ่าทันที
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {QUICK.map((q) => (
-              <button
-                key={q}
-                onClick={() => setMsg(q)}
-                className="cursor-pointer rounded-full bg-white/10 px-3 py-2 text-xs text-white/85 transition-colors hover:bg-white/18"
-              >
-                {q}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-2.5">
-            <Button size="lg" disabled={!msg.trim()} onClick={() => onSent(msg.trim())}>
-              <Icon name="send" size={19} />
-              ส่งกำลังใจ
-            </Button>
-            <Button variant="ghost" size="lg" onClick={shareToLine}>
-              <Icon name="spark" size={19} />
-              แชร์เรื่องนี้ต่อทาง LINE
-            </Button>
-          </div>
+          <EncourageBox
+            clip={entry.cp.clip}
+            elder={entry.elder}
+            checkpointName={entry.cp.name}
+            // A written message is a finished thought — close on it. Reaction
+            // chips stay open so several can be tapped in a row.
+            onSent={(_text, kind) => kind === 'comment' && onClose()}
+          />
         </div>
       )}
     </Sheet>

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { storage } from '../lib/storage.js'
 import { useStore } from '../lib/useStore.js'
+import { useIsElder } from '../lib/role.js'
 import { elderById } from '../data/elders.js'
 import Icon from './Icon.jsx'
 
@@ -11,7 +12,7 @@ import Icon from './Icon.jsx'
 export default function AppHeader() {
   const state = useStore()
   const navigate = useNavigate()
-  const isElder = state.role === 'elder'
+  const isElder = useIsElder()
   const elder = elderById(state.elderId)
 
   const swap = (role) => {
@@ -56,7 +57,7 @@ export default function AppHeader() {
           { id: 'user', label: 'ผู้สำรวจ', icon: 'compass' },
           { id: 'elder', label: 'ผู้เฒ่า', icon: 'user' },
         ].map((r) => {
-          const on = state.role === r.id
+          const on = (r.id === 'elder') === isElder
           return (
             <button
               key={r.id}

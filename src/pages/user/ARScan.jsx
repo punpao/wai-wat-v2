@@ -17,7 +17,8 @@ import {
 } from '../../lib/geo.js'
 import { useHeading } from '../../lib/useHeading.js'
 import ClipPlayer, { ElderReveal } from '../../components/ClipPlayer.jsx'
-import { Button, useToast } from '../../components/ui.jsx'
+import EncourageBox from '../../components/EncourageBox.jsx'
+import { Button } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
 /**
@@ -45,7 +46,6 @@ export default function ARScan() {
   const navigate = useNavigate()
   const state = useStore()
   const pos = usePosition()
-  const toast = useToast()
   const cp = checkpointById(checkpointId)
   const elder = cp ? elderById(cp.elderId) : null
 
@@ -184,11 +184,11 @@ export default function ARScan() {
   const earned = BADGES.filter((b) => b.need === state.discoveries.length)
 
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-black">
+    <div className="relative min-h-dvh overflow-x-hidden bg-black">
       {/* ── camera feed (or its stand-in) ── */}
       {cam !== 'on' ? (
         <div
-          className="absolute inset-0"
+          className="fixed inset-0"
           style={{
             background:
               'radial-gradient(120% 80% at 30% 20%, #653877 0%, #501D65 45%, #2B0F30 100%)',
@@ -200,18 +200,18 @@ export default function ARScan() {
           autoPlay
           playsInline
           muted
-          className="absolute inset-0 h-full w-full object-cover"
+          className="fixed inset-0 h-full w-full object-cover"
         />
       )}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#2B0F30]/85 via-[#2B0F30]/55 to-[#2B0F30]/95" />
+      <div className="fixed inset-0 bg-gradient-to-b from-[#2B0F30]/85 via-[#2B0F30]/55 to-[#2B0F30]/95" />
       <div
-        className="absolute inset-0"
+        className="fixed inset-0"
         style={{ background: 'radial-gradient(120% 70% at 50% 45%, transparent 0%, rgba(43,15,48,.72) 100%)' }}
       />
 
       {/* ── top bar ── */}
       <div
-        className="absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-4"
+        className="fixed inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-4"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
         <button
@@ -239,7 +239,7 @@ export default function ARScan() {
       </div>
 
       {cam === 'blocked' && phase === 'hunting' && (
-        <div className="absolute inset-x-0 top-24 z-30 mx-auto max-w-xs rounded-2xl bg-black/60 px-4 py-3 text-center ring-1 ring-white/15">
+        <div className="fixed inset-x-0 top-24 z-30 mx-auto max-w-xs rounded-2xl bg-black/60 px-4 py-3 text-center ring-1 ring-white/15">
           <p className="text-xs leading-relaxed text-lavender300">{camMsg}</p>
           <button
             onClick={startCamera}
@@ -395,7 +395,7 @@ export default function ARScan() {
 
       {/* ── phase: reward ── */}
       {phase === 'reward' && (
-        <div className="anim-risein relative z-20 flex min-h-dvh flex-col items-center justify-center px-6 pb-24 pt-24 text-center">
+        <div className="anim-risein relative z-20 flex min-h-dvh flex-col items-center justify-center px-6 pb-28 pt-24 text-center">
           <div className="relative grid place-items-center">
             <div className="orbit-ring absolute h-40 w-40" />
             <div className="grid h-24 w-24 place-items-center rounded-full bg-gold200 text-maroon900">
@@ -427,13 +427,14 @@ export default function ARScan() {
             </div>
           )}
 
-          <div className="mt-7 flex w-full max-w-xs flex-col gap-2.5">
-            <Button size="lg" onClick={() => navigate('/profile')}>
-              ดูประวัติการค้นพบ
-              <Icon name="arrowRight" size={18} />
-            </Button>
+          {/* Answering back belongs here, while the story is still in the ear —
+              not three taps away in the history screen. */}
+          <div className="mt-6 w-full max-w-sm rounded-3xl bg-black/35 p-4 ring-1 ring-white/12">
+            <EncourageBox clip={cp.clip} elder={elder} checkpointName={cp.name} />
+          </div>
+
+          <div className="mt-6 flex w-full max-w-sm flex-col gap-2.5">
             <Button
-              variant="ghost"
               size="lg"
               onClick={() => {
                 pos.clearSim()
@@ -441,21 +442,11 @@ export default function ARScan() {
               }}
             >
               กลับไปเดินต่อ
+              <Icon name="arrowRight" size={18} />
             </Button>
-            <button
-              onClick={() => {
-                storage.sendEncouragement({
-                  clipId: cp.clip.id,
-                  text: 'ขอบคุณที่เล่าให้ฟังครับ/ค่ะ',
-                  kind: 'cheer',
-                })
-                toast('ส่งกำลังใจถึงผู้เฒ่าแล้ว', 'good')
-              }}
-              className="flex cursor-pointer items-center justify-center gap-2 py-2 text-sm font-semibold text-gold200 hover:text-white"
-            >
-              <Icon name="heart" size={17} />
-              ส่งกำลังใจให้{elder?.short}
-            </button>
+            <Button variant="ghost" size="lg" onClick={() => navigate('/profile')}>
+              ดูประวัติการค้นพบ
+            </Button>
           </div>
 
           {found && (

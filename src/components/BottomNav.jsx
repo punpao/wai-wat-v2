@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { useStore } from '../lib/useStore.js'
+import { useIsElder } from '../lib/role.js'
 import Icon from './Icon.jsx'
 
 const USER_TABS = [
@@ -15,8 +15,7 @@ const ELDER_TABS = [
 ]
 
 export default function BottomNav() {
-  const state = useStore()
-  const isElder = state.role === 'elder'
+  const isElder = useIsElder()
   const tabs = isElder ? ELDER_TABS : USER_TABS
 
   return (
