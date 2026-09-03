@@ -1,6 +1,11 @@
 /**
  * ผู้สูงอายุผู้ให้ความรู้ (Elder contributors) — mock data.
+ *
  * `sprite` picks the illustrated character variant in <ElderSprite />.
+ * `photo` is optional: a real photograph, served from `public/elders/`,
+ *   which <ElderPhoto /> stages over the camera feed in place of the
+ *   drawing. Anyone without one keeps the sprite, so photos can land one
+ *   elder at a time. See public/elders/README.md for what to hand in.
  */
 export const ELDERS = [
   {
@@ -56,6 +61,7 @@ export const ELDERS = [
     area: 'สงขลา',
     craft: 'เจ้าของร้านโกปี๊เก่าแก่ในเมืองเก่าสงขลา',
     sprite: { skin: '#E5AE85', shirt: '#D9502F', hair: '#F0F0F0', accessory: 'bun' },
+    photo: '/elders/e-saowanee.png',
   },
   {
     id: 'e-charoen',

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import { mmss } from './ui.jsx'
-import ElderSprite, { ElderAvatar } from './ElderSprite.jsx'
+import { ElderAvatar } from './ElderSprite.jsx'
+import ElderPhoto from './ElderPhoto.jsx'
 
 /**
  * ClipPlayer — plays a "knowledge clip".
@@ -130,13 +131,26 @@ export default function ClipPlayer({ clip, elder, compact = false, onEnded }) {
   )
 }
 
-/** The elder appearing over the camera feed. */
+/**
+ * The elder appearing over the camera feed.
+ *
+ * A photograph and the illustrated sprite want different staging: the
+ * drawing can bob and mouth its lines, the photo has to be lit into the
+ * scene and left to hold still. <ElderPhoto /> covers the fallback, so
+ * `photo` only decides the staging around the figure.
+ */
 export function ElderReveal({ elder, talking }) {
+  const photo = !!elder?.photo
   return (
-    <div className="anim-floaty relative grid place-items-center">
+    <div
+      className={`relative grid place-items-center ${photo ? 'anim-floatysoft' : 'anim-floaty'}`}
+    >
       <div className="orbit-ring absolute h-56 w-56 opacity-50" />
       <div className="orbit-ring absolute h-72 w-72 opacity-25" />
-      <ElderSprite elder={elder} size={190} talking={talking} />
+      {photo && (
+        <div className={`ar-halo absolute h-72 w-72 ${talking ? 'anim-speakglow' : 'opacity-70'}`} />
+      )}
+      <ElderPhoto elder={elder} size={190} talking={talking} className="relative" />
     </div>
   )
 }
