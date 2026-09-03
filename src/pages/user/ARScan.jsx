@@ -58,8 +58,12 @@ export default function ARScan() {
   const [camMsg, setCamMsg] = useState('')
   const [simHeat, setSimHeat] = useState(100)
   const [simHint, setSimHint] = useState(SIM_HINTS[0])
+  const [stream, setStream] = useState(null)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
+  // Bumped whenever a camera attempt is superseded, so a getUserMedia
+  // that resolves late cannot hand its stream to a screen that moved on.
+  const camGen = useRef(0)
   const wasNew = useRef(false)
 
   const realDist =
@@ -92,21 +96,25 @@ export default function ARScan() {
       )
       return
     }
+    const gen = ++camGen.current
+    setCam('starting')
     try {
       const s = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: 'environment' } },
         audio: false,
       })
-      streamRef.current = s
-      if (videoRef.current) {
-        videoRef.current.srcObject = s
-        // iOS Safari does not always autoplay a stream without this nudge.
-        try {
-          await videoRef.current.play()
-        } catch {
-          /* the muted+playsInline video will start on its own */
-        }
+      // A remount or a fast retry can land here after this attempt was
+      // superseded — hand the camera straight back rather than leaving a
+      // second one running behind the screen.
+      if (gen !== camGen.current) {
+        s.getTracks().forEach((t) => t.stop())
+        return
       }
+      streamRef.current = s
+      // Handing the stream to the element is the attach effect's job. Doing
+      // it here used to mean assigning to a ref that was still null, because
+      // the <video> did not exist until setCam('on') had already run.
+      setStream(s)
       setCam('on')
     } catch (err) {
       setCam('blocked')
@@ -123,10 +131,26 @@ export default function ARScan() {
   useEffect(() => {
     startCamera()
     return () => {
+      camGen.current += 1
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
     }
   }, [startCamera])
+
+  /* The <video> is mounted for the whole hunt, so by the time a stream
+     exists there is always a real element to give it to. */
+  useEffect(() => {
+    const el = videoRef.current
+    if (!el || !stream) return
+    el.srcObject = stream
+    // iOS Safari will not start a stream on autoplay alone.
+    el.play().catch(() => {
+      /* muted + playsInline lets it start on its own */
+    })
+    return () => {
+      el.srcObject = null
+    }
+  }, [stream])
 
   // Keep a live GPS watch running for the whole hunt.
   useEffect(() => {
@@ -189,8 +213,18 @@ export default function ARScan() {
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-black">
-      {/* ── camera feed (or its stand-in) ── */}
-      {cam !== 'on' ? (
+      {/* ── camera feed (or its stand-in) ──
+          The <video> is never unmounted: a video element that only appears
+          once the camera is already open is one the stream was never handed
+          to, which is a black screen over a camera that is genuinely on. */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className={`fixed inset-0 h-full w-full object-cover ${cam === 'on' ? '' : 'opacity-0'}`}
+      />
+      {cam !== 'on' && (
         <div
           className="fixed inset-0"
           style={{
@@ -198,20 +232,27 @@ export default function ARScan() {
               'radial-gradient(120% 80% at 30% 20%, #653877 0%, #501D65 45%, #2B0F30 100%)',
           }}
         />
-      ) : (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="fixed inset-0 h-full w-full object-cover"
-        />
       )}
-      <div className="fixed inset-0 bg-gradient-to-b from-[#2B0F30]/85 via-[#2B0F30]/55 to-[#2B0F30]/95" />
-      <div
-        className="fixed inset-0"
-        style={{ background: 'radial-gradient(120% 70% at 50% 45%, transparent 0%, rgba(43,15,48,.72) 100%)' }}
-      />
+      {/* The scrim keeps white text legible over whatever the lens sees, so
+          it lifts once there is a real feed underneath to look at — every
+          text block on this screen carries its own backing anyway. */}
+      {cam === 'on' ? (
+        <>
+          <div className="fixed inset-0 bg-gradient-to-b from-[#2B0F30]/55 via-[#2B0F30]/20 to-[#2B0F30]/75" />
+          <div
+            className="fixed inset-0"
+            style={{ background: 'radial-gradient(120% 70% at 50% 45%, transparent 0%, rgba(43,15,48,.45) 100%)' }}
+          />
+        </>
+      ) : (
+        <>
+          <div className="fixed inset-0 bg-gradient-to-b from-[#2B0F30]/85 via-[#2B0F30]/55 to-[#2B0F30]/95" />
+          <div
+            className="fixed inset-0"
+            style={{ background: 'radial-gradient(120% 70% at 50% 45%, transparent 0%, rgba(43,15,48,.72) 100%)' }}
+          />
+        </>
+      )}
 
       {/* ── top bar ── */}
       <div
