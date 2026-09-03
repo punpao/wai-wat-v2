@@ -11,6 +11,7 @@ export const ELDERS = [
   {
     id: 'e-somchai',
     name: 'ลุงสมชาย ใจดี',
+    photo: '/elders/e-thongsuk.png',
     short: 'ลุงสมชาย',
     age: 72,
     area: 'เชียงใหม่',
@@ -20,6 +21,7 @@ export const ELDERS = [
   {
     id: 'e-boonma',
     name: 'ป้าบุญมา ศรีทอง',
+    photo: '/elders/e-thongsuk.png',
     short: 'ป้าบุญมา',
     age: 68,
     area: 'เชียงใหม่',
@@ -29,6 +31,7 @@ export const ELDERS = [
   {
     id: 'e-prasit',
     name: 'ตาประสิทธิ์ วงศ์ไทย',
+    photo: '/elders/e-thongsuk.png',
     short: 'ตาประสิทธิ์',
     age: 79,
     area: 'พระนคร',
@@ -38,6 +41,7 @@ export const ELDERS = [
   {
     id: 'e-lamyai',
     name: 'ยายลำไย ดอกไม้',
+    photo: '/elders/e-thongsuk.png',
     short: 'ยายลำไย',
     age: 81,
     area: 'พระนคร',
@@ -47,6 +51,7 @@ export const ELDERS = [
   {
     id: 'e-thongdee',
     name: 'ลุงทองดี เรือนงาม',
+    photo: '/elders/e-thongsuk.png',
     short: 'ลุงทองดี',
     age: 75,
     area: 'พระนครศรีอยุธยา',
@@ -56,6 +61,7 @@ export const ELDERS = [
   {
     id: 'e-saowanee',
     name: 'ป้าเสาวณีย์ ทะเลใต้',
+    photo: '/elders/e-thongsuk.png',
     short: 'ป้าเสาวณีย์',
     age: 70,
     area: 'สงขลา',
@@ -66,6 +72,7 @@ export const ELDERS = [
   {
     id: 'e-charoen',
     name: 'ลุงเจริญ ใจสุข',
+    photo: '/elders/e-thongsuk.png',
     short: 'ลุงเจริญ',
     age: 66,
     area: 'ราชบุรี',
@@ -74,6 +81,7 @@ export const ELDERS = [
   },
   {
     id: 'e-sompong',
+    photo: '/elders/e-thongsuk.png',
     name: 'ลุงสมพงษ์ ฉลุลาย',
     short: 'ลุงสมพงษ์',
     age: 71,
@@ -83,6 +91,7 @@ export const ELDERS = [
   },
   {
     id: 'e-thongsuk',
+    photo: '/elders/e-thongsuk.png',
     name: 'ป้าทองสุข ทอลาย',
     short: 'ป้าทองสุข',
     age: 69,
