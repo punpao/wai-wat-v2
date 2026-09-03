@@ -7,6 +7,7 @@
  */
 import { ELDERS } from '../data/elders.js'
 import { allCheckpoints } from '../data/locations.js'
+import { WORKSHOPS } from '../data/workshops.js'
 
 const KEY = 'waiwat:v1'
 
@@ -39,6 +40,12 @@ const seed = () => {
         },
       ]),
     ),
+    /** seats already taken by other people, keyed by workshop id */
+    workshopStats: Object.fromEntries(
+      WORKSHOPS.map((w) => [w.id, { registered: w.baseRegistered }]),
+    ),
+    /** workshopRegistrations: [{ id, ref, workshopId, method, amount, at }] */
+    workshopRegistrations: [],
     /** the demo signs in as this elder when the role switch flips */
     elderId: ELDERS[0].id,
     elderWallet: { balance: 1240, earnedTotal: 3180 },
@@ -138,6 +145,48 @@ export const storage = {
         s.elderWallet.balance += 2
         s.elderWallet.earnedTotal += 2
       }
+      return s
+    })
+  },
+
+  /**
+   * ลงทะเบียนเวิร์คช็อป — pay with earned points, or with cash.
+   *
+   * `cash` is a simulated payment for the demo: nothing is charged, no
+   * provider is contacted, the amount is only recorded so the receipt can
+   * show it. Points, by contrast, really do leave the explorer's balance.
+   */
+  registerWorkshop(workshop, method) {
+    return update((s) => {
+      if (s.workshopRegistrations.some((r) => r.workshopId === workshop.id)) return s
+      const stat = s.workshopStats[workshop.id]
+      if (stat && stat.registered >= workshop.capacity) return s
+      if (method === 'points') {
+        if (s.user.points < workshop.cost.points) return s
+        s.user.points -= workshop.cost.points
+      }
+      if (stat) stat.registered += 1
+      s.workshopRegistrations.unshift({
+        id: `wr-${Date.now()}`,
+        ref: `WS-${String(Date.now()).slice(-6)}`,
+        workshopId: workshop.id,
+        method,
+        amount: method === 'points' ? workshop.cost.points : workshop.cost.cash,
+        at: Date.now(),
+      })
+      return s
+    })
+  },
+
+  /** Cancelling gives points back; cash was never actually taken. */
+  cancelWorkshopRegistration(registrationId) {
+    return update((s) => {
+      const i = s.workshopRegistrations.findIndex((r) => r.id === registrationId)
+      if (i < 0) return s
+      const [reg] = s.workshopRegistrations.splice(i, 1)
+      if (reg.method === 'points') s.user.points += reg.amount
+      const stat = s.workshopStats[reg.workshopId]
+      if (stat) stat.registered = Math.max(0, stat.registered - 1)
       return s
     })
   },

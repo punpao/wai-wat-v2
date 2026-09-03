@@ -57,6 +57,33 @@ export const ELDERS = [
     craft: 'เจ้าของร้านโกปี๊เก่าแก่ในเมืองเก่าสงขลา',
     sprite: { skin: '#E5AE85', shirt: '#D9502F', hair: '#F0F0F0', accessory: 'bun' },
   },
+  {
+    id: 'e-charoen',
+    name: 'ลุงเจริญ ใจสุข',
+    short: 'ลุงเจริญ',
+    age: 66,
+    area: 'ราชบุรี',
+    craft: 'ช่างปั้นโอ่งมังกร สืบทอดฝีมือช่างจีนรุ่นปู่ที่โรงโอ่งเรืองศิลป์',
+    sprite: { skin: '#E7B48A', shirt: '#F16C95', hair: '#EDEDED', accessory: 'hat' },
+  },
+  {
+    id: 'e-sompong',
+    name: 'ลุงสมพงษ์ ฉลุลาย',
+    short: 'ลุงสมพงษ์',
+    age: 71,
+    area: 'ราชบุรี',
+    craft: 'ช่างฉลุหนังใหญ่วัดขนอน ผู้สืบทอดตัวหนังชุดรามเกียรติ์',
+    sprite: { skin: '#DCA57C', shirt: '#653877', hair: '#FFFFFF', accessory: 'glasses' },
+  },
+  {
+    id: 'e-thongsuk',
+    name: 'ป้าทองสุข ทอลาย',
+    short: 'ป้าทองสุข',
+    age: 69,
+    area: 'ราชบุรี',
+    craft: 'ช่างทอผ้าจกไทยวน สืบทอดลายดอกเซียและลายหักนกคู่',
+    sprite: { skin: '#EFC29B', shirt: '#FFD3A2', hair: '#F3F3F3', accessory: 'bun' },
+  },
 ]
 
 export const elderById = (id) => ELDERS.find((e) => e.id === id)

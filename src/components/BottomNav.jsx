@@ -8,6 +8,7 @@ import Icon from './Icon.jsx'
 
 const USER_TABS = [
   { to: '/map', label: 'แผนที่', icon: 'map' },
+  { to: '/workshops', label: 'เวิร์คช็อป', icon: 'workshop' },
   { to: '/profile', label: 'โปรไฟล์', icon: 'user' },
 ]
 
@@ -116,11 +117,16 @@ function UserNav() {
     navigate(`/scan/${target.id}`)
   }
 
+  // Four slots: the scan button keeps a column of its own so it never sits
+  // on top of a tab's tap target.
   return (
     <Bar>
-      <ul className="mx-auto grid max-w-lg grid-cols-3 items-end px-2 pt-1.5">
+      <ul className="mx-auto grid max-w-lg grid-cols-4 items-end px-1 pt-1.5">
         <li>
           <Tab {...USER_TABS[0]} />
+        </li>
+        <li>
+          <Tab {...USER_TABS[1]} />
         </li>
 
         <li className="relative flex justify-center">
@@ -137,7 +143,7 @@ function UserNav() {
         </li>
 
         <li>
-          <Tab {...USER_TABS[1]} />
+          <Tab {...USER_TABS[2]} />
         </li>
       </ul>
     </Bar>

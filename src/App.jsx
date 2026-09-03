@@ -11,6 +11,8 @@ import DemoPanel from './components/DemoPanel.jsx'
 import MapJourney from './pages/user/MapJourney.jsx'
 import ARScan from './pages/user/ARScan.jsx'
 import Profile from './pages/user/Profile.jsx'
+import Workshops from './pages/user/Workshops.jsx'
+import WorkshopDetail from './pages/user/WorkshopDetail.jsx'
 import ElderHome from './pages/elder/ElderHome.jsx'
 import MyClips from './pages/elder/MyClips.jsx'
 import Redeem from './pages/elder/Redeem.jsx'
@@ -44,6 +46,8 @@ export default function App() {
               <Route path="/" element={<Navigate to={state.role === 'elder' ? '/elder' : '/map'} replace />} />
               <Route path="/map" element={<MapJourney />} />
               <Route path="/scan/:checkpointId" element={<ARScan />} />
+              <Route path="/workshops" element={<Workshops />} />
+              <Route path="/workshop/:workshopId" element={<WorkshopDetail />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/elder" element={<ElderHome />} />
               <Route path="/elder/clips" element={<MyClips />} />

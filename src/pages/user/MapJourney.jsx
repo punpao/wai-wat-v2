@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { LOCATIONS, locationById } from '../../data/locations.js'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { LOCATIONS, checkpointById, locationById } from '../../data/locations.js'
+import { workshopByCheckpoint } from '../../data/workshops.js'
 import { elderById } from '../../data/elders.js'
 import { useStore } from '../../lib/useStore.js'
 import { usePosition } from '../../lib/position.jsx'
@@ -16,9 +17,22 @@ export default function MapJourney() {
   const state = useStore()
   const pos = usePosition()
   const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
   const [locId, setLocId] = useState('')
   const [layer, setLayer] = useState('standard')
   const [active, setActive] = useState(null)
+
+  // Arriving from a workshop: open that trail with its pin already selected.
+  const deepLink = params.get('checkpoint')
+  useEffect(() => {
+    if (!deepLink) return
+    const cp = checkpointById(deepLink)
+    if (cp) {
+      setLocId(cp.locationId)
+      setActive(cp)
+    }
+    setParams({}, { replace: true })
+  }, [deepLink, setParams])
 
   const location = locId ? locationById(locId) : null
   const checkpoints = location?.checkpoints ?? []
@@ -235,6 +249,26 @@ export default function MapJourney() {
                 </p>
               </div>
             </div>
+
+            {workshopByCheckpoint(active.id) && (
+              <button
+                onClick={() => navigate(`/workshop/${workshopByCheckpoint(active.id).id}`)}
+                className="flex w-full cursor-pointer items-center gap-3 rounded-2xl bg-gold200/12 p-3 text-left ring-1 ring-gold200/40 transition-colors hover:bg-gold200/20"
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gold200/20 text-gold200">
+                  <Icon name="workshop" size={20} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[11px] font-semibold uppercase tracking-[0.16em] text-gold200">
+                    มีเวิร์คช็อปที่จุดนี้
+                  </span>
+                  <span className="block truncate text-sm font-semibold">
+                    {workshopByCheckpoint(active.id).title}
+                  </span>
+                </span>
+                <Icon name="chevron" size={18} className="shrink-0 text-gold200" />
+              </button>
+            )}
 
             <div className="rounded-2xl bg-black/20 p-3 text-center text-sm">
               {activeDist == null ? (

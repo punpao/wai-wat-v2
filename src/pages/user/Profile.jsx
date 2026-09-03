@@ -1,16 +1,21 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { checkpointById } from '../../data/locations.js'
 import { elderById } from '../../data/elders.js'
+import { workshopById } from '../../data/workshops.js'
 import { BADGES, levelFor, nextLevel } from '../../data/rewards.js'
+import { storage } from '../../lib/storage.js'
 import { useStore } from '../../lib/useStore.js'
 import ClipPlayer from '../../components/ClipPlayer.jsx'
 import EncourageBox from '../../components/EncourageBox.jsx'
 import { ElderAvatar } from '../../components/ElderSprite.jsx'
-import { Button, Card, Eyebrow, OrbitDecor, Sheet, thaiDate } from '../../components/ui.jsx'
+import { Button, Card, Eyebrow, OrbitDecor, Sheet, thaiDate, useToast } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
 export default function Profile() {
   const state = useStore()
+  const navigate = useNavigate()
+  const toast = useToast()
   const [replay, setReplay] = useState(null)
   const [cheer, setCheer] = useState(null)
 
@@ -18,6 +23,14 @@ export default function Profile() {
   const lvl = levelFor(points)
   const next = nextLevel(points)
   const progress = next ? Math.round(((points - lvl.min) / (next.min - lvl.min)) * 100) : 100
+
+  const myWorkshops = useMemo(
+    () =>
+      state.workshopRegistrations
+        .map((r) => ({ ...r, ws: workshopById(r.workshopId) }))
+        .filter((r) => r.ws),
+    [state.workshopRegistrations],
+  )
 
   const history = useMemo(
     () =>
@@ -110,6 +123,77 @@ export default function Profile() {
             )
           })}
         </ul>
+      </section>
+
+      {/* ── Workshops booked ── */}
+      <section className="px-4 pb-6">
+        <Eyebrow>เวิร์คช็อปที่ลงทะเบียนไว้</Eyebrow>
+        {myWorkshops.length === 0 ? (
+          <Card className="mt-3 p-5 text-center">
+            <Icon name="workshop" size={26} className="mx-auto text-gold200" />
+            <p className="mt-2.5 text-sm font-semibold">ยังไม่ได้จองคลาสไหนไว้</p>
+            <p className="mx-auto mt-1 max-w-xs text-xs leading-relaxed text-lavender300">
+              ผู้สูงอายุในหลายย่านเปิดสอนงานช่างของตัวเอง ลองดูในแท็บเวิร์คช็อป
+            </p>
+            <Button size="sm" variant="ghost" className="mt-3" onClick={() => navigate('/workshops')}>
+              ดูเวิร์คช็อปทั้งหมด
+              <Icon name="arrowRight" size={16} />
+            </Button>
+          </Card>
+        ) : (
+          <ul className="mt-3 space-y-3">
+            {myWorkshops.map((r) => (
+              <li key={r.id}>
+                <Card className="p-4">
+                  <div className="flex items-start gap-3">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gold200/15 text-gold200">
+                      <Icon name={r.ws.icon} size={22} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-semibold">{r.ws.title}</p>
+                      <p className="mt-0.5 flex items-center gap-1.5 text-xs text-lavender300">
+                        <Icon name="calendar" size={13} className="shrink-0" />
+                        <span className="truncate">
+                          {r.ws.schedule.day} · {r.ws.schedule.time}
+                        </span>
+                      </p>
+                      <p className="mt-0.5 truncate text-[11px] text-lavender300">
+                        {r.ref} · จ่ายด้วย
+                        {r.method === 'points' ? ` ${r.amount} แต้ม` : ` ${r.amount} บาท`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => navigate(`/workshop/${r.ws.id}`)}
+                    >
+                      <Icon name="quote" size={16} />
+                      ดูรายละเอียด
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="quiet"
+                      onClick={() => {
+                        storage.cancelWorkshopRegistration(r.id)
+                        toast(
+                          r.method === 'points'
+                            ? `ยกเลิกแล้ว คืน ${r.amount} แต้มให้เรียบร้อย`
+                            : 'ยกเลิกการลงทะเบียนแล้ว',
+                          'good',
+                        )
+                      }}
+                    >
+                      ยกเลิก
+                    </Button>
+                  </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       {/* ── History ── */}
