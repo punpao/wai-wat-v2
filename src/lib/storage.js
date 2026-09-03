@@ -200,7 +200,7 @@ export const storage = {
       s.elderWallet.balance -= reward.cost
       s.redemptions.unshift({
         id: `r-${Date.now()}`,
-        ref: `WW-${String(Date.now()).slice(-6)}`,
+        ref: `KW-${String(Date.now()).slice(-6)}`,
         rewardId: reward.id,
         name: reward.name,
         cost: reward.cost,

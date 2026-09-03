@@ -72,7 +72,7 @@ export default function EncourageBox({ clip, elder, checkpointName, onSent }) {
   const shareToLine = () => {
     const text = `ผมได้ฟังเรื่อง “${clip.title}” จาก${elder?.name}${
       checkpointName ? ` ที่${checkpointName}` : ''
-    } ผ่านแอปวัยวัฒน์\n${msg.trim() || 'ขอบคุณที่เก็บเรื่องนี้ไว้ให้คนรุ่นหลังนะครับ'}`
+    } ผ่านแอปกาลวัฒน์\n${msg.trim() || 'ขอบคุณที่เก็บเรื่องนี้ไว้ให้คนรุ่นหลังนะครับ'}`
     const url = `https://line.me/R/msg/text/?${encodeURIComponent(text)}`
     // LINE's share URL scheme — no backend, no API key. Clipboard is the fallback.
     const win = window.open(url, '_blank', 'noopener,noreferrer')

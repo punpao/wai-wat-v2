@@ -51,7 +51,7 @@ export default function AppHeader() {
               isElder ? 'text-maroon900' : 'text-white'
             }`}
           >
-            วัยวัฒน์
+            กาลวัฒน์
           </p>
           <p
             className={`truncate text-[11px] leading-tight max-[360px]:hidden ${
