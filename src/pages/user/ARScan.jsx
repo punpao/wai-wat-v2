@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { checkpointById } from '../../data/locations.js'
 import { elderById } from '../../data/elders.js'
 import { BADGES } from '../../data/rewards.js'
+import { recommendedWorkshop } from '../../data/workshops.js'
 import { storage } from '../../lib/storage.js'
 import { useStore } from '../../lib/useStore.js'
 import { usePosition } from '../../lib/position.jsx'
@@ -16,8 +17,11 @@ import {
   relativeAngle,
 } from '../../lib/geo.js'
 import { useHeading } from '../../lib/useHeading.js'
+import { useCamera } from '../../lib/useCamera.js'
 import ClipPlayer, { ElderReveal } from '../../components/ClipPlayer.jsx'
 import EncourageBox from '../../components/EncourageBox.jsx'
+import RegisterSheet from '../../components/RegisterSheet.jsx'
+import WorkshopTeaser from '../../components/WorkshopTeaser.jsx'
 import { Button } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
@@ -30,6 +34,11 @@ import Icon from '../../components/Icon.jsx'
  *   through the lens, it is sensors plus geometry.
  * demo — no compass (desktop, denied permission, in-app browser) or a
  *   simulated position. Synthetic hints on a timer, exactly as before.
+ *
+ * On a phone both the camera and the compass need permission, and iOS only
+ * opens the compass prompt from inside a tap — so a primer panel asks for
+ * whatever is still missing with one button. See ../../lib/useCamera.js for
+ * the iOS/Android camera handling itself.
  */
 const SIM_HINTS = [
   { text: 'ซ้าย!', rot: -90 },
@@ -50,14 +59,13 @@ export default function ARScan() {
   const elder = cp ? elderById(cp.elderId) : null
 
   const compass = useHeading()
+  const cam = useCamera()
 
   const [phase, setPhase] = useState('hunting') // hunting | found | clip | reward
-  const [cam, setCam] = useState('starting') // starting | on | off | blocked
-  const [camMsg, setCamMsg] = useState('')
+  const [primerDone, setPrimerDone] = useState(false)
+  const [registering, setRegistering] = useState(null)
   const [simHeat, setSimHeat] = useState(100)
   const [simHint, setSimHint] = useState(SIM_HINTS[0])
-  const videoRef = useRef(null)
-  const streamRef = useRef(null)
   const wasNew = useRef(false)
 
   const realDist =
@@ -78,53 +86,33 @@ export default function ARScan() {
 
   const onTarget = liveTracking && realDist <= FOUND_RADIUS_M && Math.abs(hint.rot) <= 45
 
-  /* ── camera ── */
-  const startCamera = useCallback(async () => {
-    // getUserMedia only exists on secure origins (https or localhost).
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCam('blocked')
-      setCamMsg(
-        window.isSecureContext
-          ? 'เบราว์เซอร์นี้ไม่รองรับการเปิดกล้อง ลองเปิดด้วย Chrome หรือ Safari'
-          : 'ต้องเปิดผ่าน https จึงจะใช้กล้องได้',
-      )
-      return
-    }
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false,
-      })
-      streamRef.current = s
-      if (videoRef.current) {
-        videoRef.current.srcObject = s
-        // iOS Safari does not always autoplay a stream without this nudge.
-        try {
-          await videoRef.current.play()
-        } catch {
-          /* the muted+playsInline video will start on its own */
-        }
-      }
-      setCam('on')
-    } catch (err) {
-      setCam('blocked')
-      setCamMsg(
-        err?.name === 'NotAllowedError'
-          ? 'ยังไม่ได้อนุญาตให้ใช้กล้อง — กดอนุญาตในเบราว์เซอร์แล้วลองอีกครั้ง'
-          : err?.name === 'NotFoundError'
-            ? 'ไม่พบกล้องบนอุปกรณ์นี้'
-            : 'เปิดกล้องไม่ได้ (บางแอปที่เปิดเว็บในตัว เช่น LINE หรือ Facebook ไม่อนุญาต) — ลองเปิดใน Chrome หรือ Safari',
-      )
-    }
-  }, [])
+  // What to suggest once the story ends: the class at this pin first, then
+  // anything else this elder teaches, then the rest of the trail.
+  const rec = useMemo(
+    () =>
+      cp
+        ? recommendedWorkshop({
+            checkpointId: cp.id,
+            elderId: cp.elderId,
+            locationId: cp.locationId,
+          })
+        : null,
+    // checkpointById rebuilds the object on every render, so key on the ids.
+    [cp?.id, cp?.elderId, cp?.locationId],
+  )
 
-  useEffect(() => {
-    startCamera()
-    return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-      streamRef.current = null
-    }
-  }, [startCamera])
+  /* ── permissions: ask for whatever is still missing, in one tap ── */
+  const needsCamera = cam.state === 'blocked'
+  const needsCompass = compass.state === 'needs-permission' && !pos.isSimulated
+  const showPrimer = phase === 'hunting' && !primerDone && (needsCamera || needsCompass)
+
+  const grantSensors = useCallback(() => {
+    // iOS opens the compass prompt only from inside a user gesture, so both
+    // requests have to leave from this same tap.
+    if (compass.state === 'needs-permission') compass.request()
+    if (cam.state !== 'on') cam.start()
+    setPrimerDone(true)
+  }, [cam, compass])
 
   // Keep a live GPS watch running for the whole hunt.
   useEffect(() => {
@@ -166,6 +154,14 @@ export default function ARScan() {
     setPhase('reward')
   }, [cp])
 
+  const openWorkshop = useCallback(
+    (w) => {
+      pos.clearSim()
+      navigate(`/workshop/${w.id}`)
+    },
+    [navigate, pos],
+  )
+
   if (!cp) {
     return (
       <div className="grid min-h-dvh place-items-center p-6 text-center">
@@ -185,24 +181,29 @@ export default function ARScan() {
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-black">
-      {/* ── camera feed (or its stand-in) ── */}
-      {cam !== 'on' ? (
-        <div
-          className="fixed inset-0"
-          style={{
-            background:
-              'radial-gradient(120% 80% at 30% 20%, #653877 0%, #501D65 45%, #2B0F30 100%)',
-          }}
-        />
-      ) : (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="fixed inset-0 h-full w-full object-cover"
-        />
-      )}
+      {/* ── camera feed ──
+          The <video> is always mounted, even before a stream exists: attaching
+          one to an element that is not in the DOM yet is exactly how a phone
+          ends up granting the camera and still showing black. */}
+      <div
+        className="fixed inset-0"
+        style={{
+          background:
+            'radial-gradient(120% 80% at 30% 20%, #653877 0%, #501D65 45%, #2B0F30 100%)',
+        }}
+      />
+      <video
+        ref={cam.videoRef}
+        autoPlay
+        playsInline
+        muted
+        disablePictureInPicture
+        className={`fixed inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+          cam.isOn ? 'opacity-100' : 'opacity-0'
+        }`}
+        // A front camera reads as a mirror to everyone who has ever used one.
+        style={cam.facing === 'user' ? { transform: 'scaleX(-1)' } : undefined}
+      />
       <div className="fixed inset-0 bg-gradient-to-b from-[#2B0F30]/85 via-[#2B0F30]/55 to-[#2B0F30]/95" />
       <div
         className="fixed inset-0"
@@ -214,13 +215,37 @@ export default function ARScan() {
         className="fixed inset-x-0 top-0 z-30 flex items-start justify-between gap-3 p-4"
         style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
       >
-        <button
-          onClick={() => navigate('/map')}
-          className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/20 backdrop-blur"
-          aria-label="ปิดหน้าสแกน"
-        >
-          <Icon name="close" size={20} />
-        </button>
+        <div className="flex flex-col items-start gap-2">
+          <button
+            onClick={() => navigate('/map')}
+            className="grid h-11 w-11 cursor-pointer place-items-center rounded-full bg-black/45 text-white ring-1 ring-white/20 backdrop-blur"
+            aria-label="ปิดหน้าสแกน"
+          >
+            <Icon name="close" size={20} />
+          </button>
+
+          {cam.isOn && cam.canSwitch && (
+            <button
+              onClick={cam.switchCamera}
+              className="flex min-h-[40px] cursor-pointer items-center gap-1.5 rounded-full bg-black/45 px-3 text-xs font-semibold text-white ring-1 ring-white/20 backdrop-blur"
+              aria-label="สลับกล้องหน้า/หลัง"
+            >
+              <Icon name="refresh" size={16} />
+              สลับกล้อง
+            </button>
+          )}
+
+          {!cam.isOn && primerDone && (
+            <button
+              onClick={() => cam.start()}
+              className="flex min-h-[40px] cursor-pointer items-center gap-1.5 rounded-full bg-black/45 px-3 text-xs font-semibold text-gold200 ring-1 ring-gold200/35 backdrop-blur"
+            >
+              <Icon name="scan" size={16} />
+              {cam.state === 'starting' ? 'กำลังเปิดกล้อง…' : 'เปิดกล้อง'}
+            </button>
+          )}
+        </div>
+
         <div className="max-w-[62%] rounded-2xl bg-black/50 px-3.5 py-2 text-right ring-1 ring-white/15 backdrop-blur">
           <p className="text-[13px] font-semibold text-white">{cp.name}</p>
           <p className="text-[11px] text-lavender300">
@@ -238,16 +263,36 @@ export default function ARScan() {
         </div>
       </div>
 
-      {cam === 'blocked' && phase === 'hunting' && (
-        <div className="fixed inset-x-0 top-24 z-30 mx-auto max-w-xs rounded-2xl bg-black/60 px-4 py-3 text-center ring-1 ring-white/15">
-          <p className="text-xs leading-relaxed text-lavender300">{camMsg}</p>
-          <button
-            onClick={startCamera}
-            className="mt-2 min-h-[40px] cursor-pointer rounded-full bg-white/15 px-4 text-xs font-semibold text-white hover:bg-white/25"
-          >
-            ลองเปิดกล้องอีกครั้ง
-          </button>
-          <p className="mt-2 text-[11px] text-lavender300">ขั้นตอนอื่นยังทำงานได้ตามปกติ</p>
+      {/* ── permission primer: the one tap that opens camera + compass ── */}
+      {showPrimer && (
+        <div className="fixed inset-0 z-[25] grid place-items-center bg-[#2B0F30]/80 px-6 backdrop-blur-sm">
+          <div className="anim-risein w-full max-w-xs rounded-3xl bg-[#43164C]/95 p-5 text-center ring-1 ring-white/15">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-gold200/15 text-gold200">
+              <Icon name={needsCamera ? 'scan' : 'compass'} size={28} />
+            </span>
+            <h2 className="mt-3 text-lg font-semibold">
+              {needsCamera && needsCompass
+                ? 'เปิดกล้องและเข็มทิศ'
+                : needsCamera
+                  ? 'เปิดกล้องเพื่อเริ่ม AR'
+                  : 'เปิดเข็มทิศเพื่อชี้ทางจริง'}
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-lavender300">
+              {needsCamera
+                ? cam.message
+                : 'อนุญาตให้ใช้เข็มทิศ แล้วลูกศรจะชี้ไปยังจุดตรวจจริงตามที่คุณหันตัว'}
+            </p>
+            <Button size="lg" className="mt-4 w-full" onClick={grantSensors}>
+              <Icon name="check" size={20} />
+              อนุญาตและเริ่ม
+            </Button>
+            <button
+              onClick={() => setPrimerDone(true)}
+              className="mt-2.5 min-h-[44px] w-full cursor-pointer text-xs font-semibold text-lavender300 transition-colors hover:text-white"
+            >
+              ข้ามไปก่อน · เล่นในโหมดสาธิต
+            </button>
+          </div>
         </div>
       )}
 
@@ -354,6 +399,11 @@ export default function ARScan() {
                       ? 'อุปกรณ์นี้ไม่มีเข็มทิศ (เช่น คอมพิวเตอร์) จึงใช้ทิศทางจำลองแทน'
                       : 'กำลังรอสัญญาณเข็มทิศ'}
               </p>
+              {cam.state === 'blocked' && primerDone && (
+                <p className="mt-2 max-w-xs text-center text-[11px] leading-relaxed text-lavender300">
+                  {cam.message} · ขั้นตอนอื่นยังทำงานได้ตามปกติ
+                </p>
+              )}
             </>
           )}
         </div>
@@ -433,6 +483,19 @@ export default function ARScan() {
             <EncourageBox clip={cp.clip} elder={elder} checkpointName={cp.name} />
           </div>
 
+          {/* Hearing how it is made is the moment someone wants to try it, so
+              the class is offered here rather than left to be found later. */}
+          {rec && (
+            <div className="mt-4 w-full max-w-sm">
+              <WorkshopTeaser
+                workshop={rec.workshop}
+                reason={rec.reason}
+                onRegister={setRegistering}
+                onOpen={openWorkshop}
+              />
+            </div>
+          )}
+
           <div className="mt-6 flex w-full max-w-sm flex-col gap-2.5">
             <Button
               size="lg"
@@ -457,6 +520,12 @@ export default function ARScan() {
           )}
         </div>
       )}
+
+      <RegisterSheet
+        workshop={registering}
+        open={!!registering}
+        onClose={() => setRegistering(null)}
+      />
     </div>
   )
 }

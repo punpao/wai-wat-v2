@@ -147,3 +147,27 @@ export const workshopByCheckpoint = (checkpointId) =>
 
 /** What to show before an area is picked. */
 export const trendingWorkshops = () => WORKSHOPS.filter((w) => w.trending)
+
+/**
+ * What to offer someone who has just finished listening at a checkpoint.
+ *
+ * Nearest match first: the class held at this very pin, then anything else
+ * the same elder teaches, then the rest of that trail. Some trails teach
+ * nothing yet, and ending a story with an empty space is worse than an honest
+ * "from another area" — so a trending class is the floor. `reason` lets the
+ * card say why this one is being shown instead of pretending it is a
+ * coincidence.
+ */
+export function recommendedWorkshop({ checkpointId, elderId, locationId } = {}) {
+  const here = WORKSHOPS.find((w) => w.checkpointId === checkpointId)
+  if (here) return { workshop: here, reason: 'here' }
+
+  const byElder = elderId && WORKSHOPS.find((w) => w.elderIds.includes(elderId))
+  if (byElder) return { workshop: byElder, reason: 'elder' }
+
+  const nearby = locationId && WORKSHOPS.find((w) => w.locationId === locationId)
+  if (nearby) return { workshop: nearby, reason: 'nearby' }
+
+  const elsewhere = trendingWorkshops()[0]
+  return elsewhere ? { workshop: elsewhere, reason: 'trending' } : null
+}
