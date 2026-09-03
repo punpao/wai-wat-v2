@@ -145,5 +145,28 @@ export const workshopsByLocation = (locationId) =>
 export const workshopByCheckpoint = (checkpointId) =>
   WORKSHOPS.find((w) => w.checkpointId === checkpointId)
 
+/** Workshops an elder teaches — they may co-host someone else's. */
+export const workshopsByElder = (elderId) =>
+  WORKSHOPS.filter((w) => w.elderIds.includes(elderId))
+
+/**
+ * What to offer an explorer who has just finished listening at a
+ * checkpoint, or null when there is nothing honest to offer.
+ *
+ * Two tiers, and deliberately no third: the workshop held at this very
+ * spot, else one taught by the elder who was just speaking. Both follow
+ * from what was heard. An unrelated workshop in the same province would
+ * be an advert dressed as a next step, so those checkpoints stay quiet —
+ * `reason` is what lets the invitation say why it is being made.
+ */
+export const workshopSuggestionFor = (checkpoint) => {
+  if (!checkpoint) return null
+  const here = workshopByCheckpoint(checkpoint.id)
+  if (here) return { workshop: here, reason: 'here' }
+  const taught = workshopsByElder(checkpoint.elderId)[0]
+  if (taught) return { workshop: taught, reason: 'elder' }
+  return null
+}
+
 /** What to show before an area is picked. */
 export const trendingWorkshops = () => WORKSHOPS.filter((w) => w.trending)

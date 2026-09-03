@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { checkpointById } from '../../data/locations.js'
 import { elderById } from '../../data/elders.js'
 import { BADGES } from '../../data/rewards.js'
+import { workshopSuggestionFor } from '../../data/workshops.js'
 import { storage } from '../../lib/storage.js'
 import { useStore } from '../../lib/useStore.js'
 import { usePosition } from '../../lib/position.jsx'
@@ -18,6 +19,7 @@ import {
 import { useHeading } from '../../lib/useHeading.js'
 import ClipPlayer, { ElderReveal } from '../../components/ClipPlayer.jsx'
 import EncourageBox from '../../components/EncourageBox.jsx'
+import WorkshopInvite from '../../components/WorkshopInvite.jsx'
 import { Button } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
@@ -182,6 +184,9 @@ export default function ARScan() {
   const heatInfo = heatOf(heat)
   const found = state.discoveries.find((d) => d.checkpointId === cp.id)
   const earned = BADGES.filter((b) => b.need === state.discoveries.length)
+  // Null for most checkpoints, and that is the intended answer — see
+  // workshopSuggestionFor() for why nothing beats a loose match here.
+  const suggestion = workshopSuggestionFor(cp)
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-black">
@@ -424,6 +429,19 @@ export default function ARScan() {
             <div className="mt-5 flex items-center gap-2.5 rounded-full bg-coral500 px-4 py-2.5 text-sm font-semibold">
               <Icon name="medal" size={18} />
               ได้เหรียญใหม่: {earned.map((b) => b.name).join(', ')}
+            </div>
+          )}
+
+          {/* Going and doing it belongs here too. The craft was just
+              explained by the person who does it, and the points to book
+              with are the ones awarded two lines up. */}
+          {suggestion && (
+            <div className="mt-6">
+              <WorkshopInvite
+                workshop={suggestion.workshop}
+                reason={suggestion.reason}
+                elder={elder}
+              />
             </div>
           )}
 
