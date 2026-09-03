@@ -137,8 +137,9 @@ export function Sheet({ open, onClose, title, children, tone = 'dark', labelledB
         className={`anim-risein relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl sm:rounded-3xl ${
           paper
             ? 'bg-paper text-maroon900 ring-1 ring-maroon900/10'
-            : 'bg-[#43164C] text-white ring-1 ring-white/12'
+            : 'text-white ring-1 ring-white/12'
         } p-5 pb-8 shadow-2xl shadow-black/50 sm:p-6`}
+        style={paper ? undefined : { background: 'var(--app-sheet)' }}
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <h2 id={labelledBy} className={`text-xl font-semibold ${paper ? '' : 'text-white'}`}>

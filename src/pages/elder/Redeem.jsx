@@ -20,7 +20,10 @@ export default function Redeem() {
 
   return (
     <div className="mx-auto max-w-xl px-4 pb-8 pt-5">
-      <div className="mb-6 flex items-center justify-between gap-4 rounded-3xl bg-violet800 px-5 py-4 text-white">
+      <div
+        data-theme="dark"
+        className="mb-6 flex items-center justify-between gap-4 rounded-3xl bg-violet800 px-5 py-4 text-white"
+      >
         <p className="text-[17px] text-gold200">แต้มคงเหลือ</p>
         <p className="gold-number font-display text-[34px] leading-none">
           {balance.toLocaleString('th-TH')}

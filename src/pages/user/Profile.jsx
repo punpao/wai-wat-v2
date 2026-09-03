@@ -9,6 +9,7 @@ import { useStore } from '../../lib/useStore.js'
 import ClipPlayer from '../../components/ClipPlayer.jsx'
 import EncourageBox from '../../components/EncourageBox.jsx'
 import { ElderAvatar } from '../../components/ElderSprite.jsx'
+import RoleSwitch from '../../components/RoleSwitch.jsx'
 import { Button, Card, Eyebrow, OrbitDecor, Sheet, thaiDate, useToast } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
@@ -255,6 +256,11 @@ export default function Profile() {
           </ul>
         )}
       </section>
+
+      {/* ── Register switch (demo) ── */}
+      <div className="px-4 pb-6">
+        <RoleSwitch />
+      </div>
 
       {/* ── Replay ── */}
       <Sheet

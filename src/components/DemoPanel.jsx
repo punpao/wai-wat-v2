@@ -33,8 +33,8 @@ export default function DemoPanel() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-label="เปิดแผงโหมดสาธิต"
-        className="fixed bottom-24 right-4 z-[1100] flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border border-gold200/30 bg-[#2E0F35]/85 px-3.5 py-2.5 text-[12px] font-semibold text-gold200/90 shadow-lg shadow-black/35 backdrop-blur transition-colors hover:bg-[#3B1444] hover:text-gold200"
-        style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+        className="fixed bottom-24 right-4 z-[1100] flex min-h-[44px] cursor-pointer items-center gap-1.5 rounded-full border border-gold200/30 px-3.5 py-2.5 text-[12px] font-semibold text-gold200 shadow-lg shadow-black/35 backdrop-blur transition-opacity hover:opacity-85"
+        style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom))', background: 'var(--app-panel)' }}
       >
         <Icon name="sliders" size={16} />
         เลือกจุด
@@ -47,7 +47,8 @@ export default function DemoPanel() {
             role="dialog"
             aria-modal="true"
             aria-label="โหมดสาธิต"
-            className="anim-risein relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-gold200/25 bg-[#2E0F35] p-5 pb-8 sm:rounded-3xl"
+            className="anim-risein relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-gold200/25 p-5 pb-8 sm:rounded-3xl"
+            style={{ background: 'var(--app-panel)' }}
           >
             <div className="mb-1 flex items-start justify-between gap-3">
               <div>
