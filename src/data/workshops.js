@@ -145,5 +145,39 @@ export const workshopsByLocation = (locationId) =>
 export const workshopByCheckpoint = (checkpointId) =>
   WORKSHOPS.find((w) => w.checkpointId === checkpointId)
 
+/** Workshops an elder teaches — they may co-host someone else's. */
+export const workshopsByElder = (elderId) =>
+  WORKSHOPS.filter((w) => w.elderIds.includes(elderId))
+
+/**
+ * What to offer an explorer who has just finished listening, or null when
+ * this trail teaches nothing.
+ *
+ * `primary` is the workshop with the strongest claim on the moment and
+ * `reason` says what that claim is, so the invitation can state it:
+ * held at this very checkpoint, else taught by the elder who was just
+ * speaking, else simply somewhere on this trail. `others` carries the
+ * rest of the trail, because a place like ราชบุรี teaches three crafts
+ * and picking one of them for the explorer would hide the other two.
+ */
+export const workshopSuggestionsFor = (checkpoint) => {
+  if (!checkpoint) return null
+
+  const here = workshopByCheckpoint(checkpoint.id)
+  // Not scoped to the trail: an elder teaching elsewhere is still the
+  // person whose voice just finished, which outranks mere proximity.
+  const taught = workshopsByElder(checkpoint.elderId)[0]
+  const area = workshopsByLocation(checkpoint.locationId)
+
+  const primary = here ?? taught ?? area[0] ?? null
+  if (!primary) return null
+
+  return {
+    primary,
+    reason: primary === here ? 'here' : primary === taught ? 'elder' : 'area',
+    others: area.filter((w) => w.id !== primary.id),
+  }
+}
+
 /** What to show before an area is picked. */
 export const trendingWorkshops = () => WORKSHOPS.filter((w) => w.trending)

@@ -1,11 +1,17 @@
 /**
  * ผู้สูงอายุผู้ให้ความรู้ (Elder contributors) — mock data.
+ *
  * `sprite` picks the illustrated character variant in <ElderSprite />.
+ * `photo` is optional: a real photograph, served from `public/elders/`,
+ *   which <ElderPhoto /> stages over the camera feed in place of the
+ *   drawing. Anyone without one keeps the sprite, so photos can land one
+ *   elder at a time. See public/elders/README.md for what to hand in.
  */
 export const ELDERS = [
   {
     id: 'e-somchai',
     name: 'ลุงสมชาย ใจดี',
+    photo: '/elders/e-thongsuk.png',
     short: 'ลุงสมชาย',
     age: 72,
     area: 'เชียงใหม่',
@@ -15,6 +21,7 @@ export const ELDERS = [
   {
     id: 'e-boonma',
     name: 'ป้าบุญมา ศรีทอง',
+    photo: '/elders/e-thongsuk.png',
     short: 'ป้าบุญมา',
     age: 68,
     area: 'เชียงใหม่',
@@ -24,6 +31,7 @@ export const ELDERS = [
   {
     id: 'e-prasit',
     name: 'ตาประสิทธิ์ วงศ์ไทย',
+    photo: '/elders/e-thongsuk.png',
     short: 'ตาประสิทธิ์',
     age: 79,
     area: 'พระนคร',
@@ -33,6 +41,7 @@ export const ELDERS = [
   {
     id: 'e-lamyai',
     name: 'ยายลำไย ดอกไม้',
+    photo: '/elders/e-thongsuk.png',
     short: 'ยายลำไย',
     age: 81,
     area: 'พระนคร',
@@ -42,6 +51,7 @@ export const ELDERS = [
   {
     id: 'e-thongdee',
     name: 'ลุงทองดี เรือนงาม',
+    photo: '/elders/e-thongsuk.png',
     short: 'ลุงทองดี',
     age: 75,
     area: 'พระนครศรีอยุธยา',
@@ -51,15 +61,18 @@ export const ELDERS = [
   {
     id: 'e-saowanee',
     name: 'ป้าเสาวณีย์ ทะเลใต้',
+    photo: '/elders/e-thongsuk.png',
     short: 'ป้าเสาวณีย์',
     age: 70,
     area: 'สงขลา',
     craft: 'เจ้าของร้านโกปี๊เก่าแก่ในเมืองเก่าสงขลา',
     sprite: { skin: '#E5AE85', shirt: '#D9502F', hair: '#F0F0F0', accessory: 'bun' },
+    photo: '/elders/e-saowanee.png',
   },
   {
     id: 'e-charoen',
     name: 'ลุงเจริญ ใจสุข',
+    photo: '/elders/e-thongsuk.png',
     short: 'ลุงเจริญ',
     age: 66,
     area: 'ราชบุรี',
@@ -68,6 +81,7 @@ export const ELDERS = [
   },
   {
     id: 'e-sompong',
+    photo: '/elders/e-thongsuk.png',
     name: 'ลุงสมพงษ์ ฉลุลาย',
     short: 'ลุงสมพงษ์',
     age: 71,
@@ -77,6 +91,7 @@ export const ELDERS = [
   },
   {
     id: 'e-thongsuk',
+    photo: '/elders/e-thongsuk.png',
     name: 'ป้าทองสุข ทอลาย',
     short: 'ป้าทองสุข',
     age: 69,
