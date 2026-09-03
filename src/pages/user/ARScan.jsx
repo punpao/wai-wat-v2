@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { checkpointById } from '../../data/locations.js'
 import { elderById } from '../../data/elders.js'
 import { BADGES } from '../../data/rewards.js'
-import { workshopSuggestionFor } from '../../data/workshops.js'
+import { workshopSuggestionsFor } from '../../data/workshops.js'
 import { storage } from '../../lib/storage.js'
 import { useStore } from '../../lib/useStore.js'
 import { usePosition } from '../../lib/position.jsx'
@@ -184,9 +184,8 @@ export default function ARScan() {
   const heatInfo = heatOf(heat)
   const found = state.discoveries.find((d) => d.checkpointId === cp.id)
   const earned = BADGES.filter((b) => b.need === state.discoveries.length)
-  // Null for most checkpoints, and that is the intended answer — see
-  // workshopSuggestionFor() for why nothing beats a loose match here.
-  const suggestion = workshopSuggestionFor(cp)
+  // Null only where the whole trail teaches nothing.
+  const suggestion = workshopSuggestionsFor(cp)
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-black">
@@ -438,8 +437,9 @@ export default function ARScan() {
           {suggestion && (
             <div className="mt-6">
               <WorkshopInvite
-                workshop={suggestion.workshop}
+                workshop={suggestion.primary}
                 reason={suggestion.reason}
+                others={suggestion.others}
                 elder={elder}
               />
             </div>

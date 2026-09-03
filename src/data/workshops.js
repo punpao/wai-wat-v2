@@ -150,22 +150,33 @@ export const workshopsByElder = (elderId) =>
   WORKSHOPS.filter((w) => w.elderIds.includes(elderId))
 
 /**
- * What to offer an explorer who has just finished listening at a
- * checkpoint, or null when there is nothing honest to offer.
+ * What to offer an explorer who has just finished listening, or null when
+ * this trail teaches nothing.
  *
- * Two tiers, and deliberately no third: the workshop held at this very
- * spot, else one taught by the elder who was just speaking. Both follow
- * from what was heard. An unrelated workshop in the same province would
- * be an advert dressed as a next step, so those checkpoints stay quiet —
- * `reason` is what lets the invitation say why it is being made.
+ * `primary` is the workshop with the strongest claim on the moment and
+ * `reason` says what that claim is, so the invitation can state it:
+ * held at this very checkpoint, else taught by the elder who was just
+ * speaking, else simply somewhere on this trail. `others` carries the
+ * rest of the trail, because a place like ราชบุรี teaches three crafts
+ * and picking one of them for the explorer would hide the other two.
  */
-export const workshopSuggestionFor = (checkpoint) => {
+export const workshopSuggestionsFor = (checkpoint) => {
   if (!checkpoint) return null
+
   const here = workshopByCheckpoint(checkpoint.id)
-  if (here) return { workshop: here, reason: 'here' }
+  // Not scoped to the trail: an elder teaching elsewhere is still the
+  // person whose voice just finished, which outranks mere proximity.
   const taught = workshopsByElder(checkpoint.elderId)[0]
-  if (taught) return { workshop: taught, reason: 'elder' }
-  return null
+  const area = workshopsByLocation(checkpoint.locationId)
+
+  const primary = here ?? taught ?? area[0] ?? null
+  if (!primary) return null
+
+  return {
+    primary,
+    reason: primary === here ? 'here' : primary === taught ? 'elder' : 'area',
+    others: area.filter((w) => w.id !== primary.id),
+  }
 }
 
 /** What to show before an area is picked. */

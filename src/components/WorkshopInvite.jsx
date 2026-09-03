@@ -15,12 +15,16 @@ import Icon from './Icon.jsx'
  * they earned getting here, which is the one moment "ไปลองทำจริงไหม" is a
  * question rather than an advert. `reason` carries why this particular
  * workshop is being raised, so the card can say it out loud — see
- * workshopSuggestionFor() for how the two tiers are chosen.
+ * workshopSuggestionsFor() for how the three tiers are chosen.
+ *
+ * `others` is the rest of what this trail teaches, listed quietly under
+ * the main offer so a three-craft place like ราชบุรี shows all three
+ * without three cards competing for the same tap.
  *
  * Costs are shown against the live balance, because the points just
  * awarded a few lines up the screen are the same points being spent here.
  */
-export default function WorkshopInvite({ workshop, reason, elder }) {
+export default function WorkshopInvite({ workshop, reason, elder, others = [] }) {
   const state = useStore()
   const navigate = useNavigate()
   const [registering, setRegistering] = useState(false)
@@ -35,10 +39,11 @@ export default function WorkshopInvite({ workshop, reason, elder }) {
   const points = state.user.points
   const short = elder?.short ?? 'ท่าน'
 
-  const lead =
-    reason === 'here'
-      ? { label: 'มีเวิร์คช็อปที่จุดนี้', line: `ลองลงมือทำที่ตรงนี้เลยไหม` }
-      : { label: 'ท่านเปิดสอนเอง', line: `อยากลองทำจริงกับ${short}ไหม` }
+  const lead = {
+    here: { label: 'มีเวิร์คช็อปที่จุดนี้', line: 'ลองลงมือทำที่ตรงนี้เลยไหม' },
+    elder: { label: 'ท่านเปิดสอนเอง', line: `อยากลองทำจริงกับ${short}ไหม` },
+    area: { label: 'มีเวิร์คช็อปในย่านนี้', line: 'ย่านนี้ยังมีของให้ลองลงมือทำอยู่' },
+  }[reason] ?? { label: 'มีเวิร์คช็อปแนะนำ', line: 'ลองลงมือทำดูไหม' }
 
   return (
     <div className="w-full max-w-sm rounded-3xl bg-gold200/10 p-4 text-left ring-1 ring-gold200/35">
@@ -119,6 +124,33 @@ export default function WorkshopInvite({ workshop, reason, elder }) {
           <Icon name="chevron" size={16} />
         </Button>
       </div>
+
+      {others.length > 0 && (
+        <div className="mt-4 border-t border-white/10 pt-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-lavender300">
+            เวิร์คช็อปอื่นในย่านนี้
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {others.map((w) => (
+              <li key={w.id}>
+                <button
+                  onClick={() => navigate(`/workshop/${w.id}`)}
+                  className="flex w-full cursor-pointer items-center gap-2.5 rounded-xl bg-black/20 px-3 py-2 text-left transition-colors hover:bg-black/35"
+                >
+                  <Icon name={w.icon} size={16} className="shrink-0 text-gold200" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13px] font-semibold">{w.title}</span>
+                    <span className="block truncate text-[11px] text-lavender300">
+                      {w.craft} · {w.schedule.day}
+                    </span>
+                  </span>
+                  <Icon name="chevron" size={15} className="shrink-0 text-lavender300" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <RegisterSheet
         workshop={workshop}
