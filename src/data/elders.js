@@ -67,7 +67,6 @@ export const ELDERS = [
     area: 'สงขลา',
     craft: 'เจ้าของร้านโกปี๊เก่าแก่ในเมืองเก่าสงขลา',
     sprite: { skin: '#E5AE85', shirt: '#D9502F', hair: '#F0F0F0', accessory: 'bun' },
-    photo: '/elders/e-saowanee.png',
   },
   {
     id: 'e-charoen',
