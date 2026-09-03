@@ -10,8 +10,13 @@ import ElderPhoto from './ElderPhoto.jsx'
  * The prototype ships no audio/video files, so playback is a timed
  * narration: lines surface one at a time at the clip's real pace. Same
  * component powers the AR reveal and the replay from history.
+ *
+ * `collapsed` folds it down to what a subtitle needs — the line being
+ * spoken, and the transport. Over the camera the elder is the thing worth
+ * looking at, and a full transcript panel was covering her; nothing is
+ * lost, because the lines still arrive one at a time either way.
  */
-export default function ClipPlayer({ clip, elder, compact = false, onEnded }) {
+export default function ClipPlayer({ clip, elder, compact = false, collapsed = false, onEnded }) {
   const [t, setT] = useState(0)
   const [playing, setPlaying] = useState(true)
   const raf = useRef(0)
@@ -50,8 +55,8 @@ export default function ClipPlayer({ clip, elder, compact = false, onEnded }) {
   const pct = (t / clip.duration) * 100
 
   return (
-    <div className="space-y-4">
-      {!compact && (
+    <div className={collapsed ? 'space-y-3' : 'space-y-4'}>
+      {!compact && !collapsed && (
         <div className="flex items-center gap-3">
           <ElderAvatar elder={elder} size={52} />
           <div className="min-w-0">
@@ -61,37 +66,57 @@ export default function ClipPlayer({ clip, elder, compact = false, onEnded }) {
         </div>
       )}
 
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold200">
-          {clip.topic}
+      {collapsed ? (
+        <p className="truncate text-[11px] font-semibold uppercase tracking-[0.18em] text-gold200">
+          {clip.title}
         </p>
-        <h3 className="mt-1 text-lg font-semibold leading-snug">{clip.title}</h3>
-      </div>
+      ) : (
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold200">
+            {clip.topic}
+          </p>
+          <h3 className="mt-1 text-lg font-semibold leading-snug">{clip.title}</h3>
+        </div>
+      )}
 
       {/* transcript — the line being "spoken" is the one in focus */}
-      <div className="min-h-[132px] rounded-2xl bg-black/25 p-4 ring-1 ring-white/10">
-        <ul className="space-y-2.5">
-          {clip.lines.map((line, i) => (
-            <li
-              key={i}
-              className={`flex gap-2.5 text-[15px] leading-relaxed transition-opacity duration-300 ${
-                i === idx
-                  ? 'text-white'
-                  : i < idx
-                    ? 'text-white/40'
-                    : 'text-white/15'
-              }`}
-            >
-              <Icon
-                name="quote"
-                size={14}
-                className={`mt-1.5 shrink-0 ${i === idx ? 'text-gold200' : 'text-transparent'}`}
-              />
-              <span>{line}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {collapsed ? (
+        /* Keyed on the line so each one fades in as it is reached; the fixed
+           height stops the panel jumping as line lengths change. */
+        <div className="flex min-h-[62px] items-start gap-2.5 rounded-2xl bg-black/25 p-3 ring-1 ring-white/10">
+          <Icon name="quote" size={14} className="mt-1 shrink-0 text-gold200" />
+          <p key={idx} className="anim-risein text-[15px] leading-relaxed text-white">
+            {clip.lines[idx]}
+          </p>
+        </div>
+      ) : (
+        /* Capped and scrolled rather than left to grow: a long clip was
+           pushing play/pause and the finish button off the bottom of the
+           screen, which are the two controls the panel exists to offer. */
+        <div className="max-h-[26vh] min-h-[132px] overflow-y-auto rounded-2xl bg-black/25 p-4 ring-1 ring-white/10">
+          <ul className="space-y-2.5">
+            {clip.lines.map((line, i) => (
+              <li
+                key={i}
+                className={`flex gap-2.5 text-[15px] leading-relaxed transition-opacity duration-300 ${
+                  i === idx
+                    ? 'text-white'
+                    : i < idx
+                      ? 'text-white/40'
+                      : 'text-white/15'
+                }`}
+              >
+                <Icon
+                  name="quote"
+                  size={14}
+                  className={`mt-1.5 shrink-0 ${i === idx ? 'text-gold200' : 'text-transparent'}`}
+                />
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="flex items-center gap-3">
         <button

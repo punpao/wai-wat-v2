@@ -54,6 +54,9 @@ export default function ARScan() {
   const compass = useHeading()
 
   const [phase, setPhase] = useState('hunting') // hunting | found | clip | reward
+  // Folded by default: the reveal is the point of this screen, and the
+  // folded panel still delivers the story a line at a time.
+  const [clipOpen, setClipOpen] = useState(false)
   const [cam, setCam] = useState('starting') // starting | on | off | blocked
   const [camMsg, setCamMsg] = useState('')
   const [simHeat, setSimHeat] = useState(100)
@@ -420,14 +423,36 @@ export default function ARScan() {
         </div>
       )}
 
-      {/* ── phase: clip ── */}
+      {/* ── phase: clip ──
+          The elder sits in whatever room the panel leaves rather than at a
+          fixed offset, so folding the panel actually gives her the space
+          instead of opening a gap underneath her. */}
       {phase === 'clip' && (
-        <div className="relative z-20 flex min-h-dvh flex-col justify-end px-4 pb-8 pt-24">
-          <div className="pointer-events-none absolute inset-x-0 top-24 grid place-items-center">
+        <div className="relative z-20 flex h-dvh flex-col overflow-hidden px-4 pb-8 pt-24">
+          {/* min-h-0 lets this give up room when the panel is open, so the
+              transport and the finish button can never be pushed off the
+              bottom of a screen that does not scroll. */}
+          <div className="pointer-events-none flex min-h-0 flex-1 items-center justify-center overflow-hidden">
             <ElderReveal elder={elder} talking />
           </div>
-          <div className="anim-risein relative mx-auto w-full max-w-lg rounded-3xl bg-[#3A1244]/92 p-5 ring-1 ring-white/15 backdrop-blur-lg">
-            <ClipPlayer clip={cp.clip} elder={elder} onEnded={finishClip} />
+          <div className="anim-risein relative mx-auto w-full max-w-lg shrink-0 rounded-3xl bg-[#3A1244]/92 px-5 pb-5 pt-2 ring-1 ring-white/15 backdrop-blur-lg">
+            <button
+              onClick={() => setClipOpen((v) => !v)}
+              aria-expanded={clipOpen}
+              className="mb-1 flex w-full cursor-pointer flex-col items-center gap-1.5 py-1.5"
+            >
+              <span className="h-1.5 w-10 rounded-full bg-white/30" />
+              <span className="text-[11px] font-semibold text-lavender300">
+                {clipOpen ? 'ย่อลง เพื่อให้เห็นท่านชัดขึ้น' : 'แตะเพื่อดูบทเต็ม'}
+              </span>
+            </button>
+
+            <ClipPlayer
+              clip={cp.clip}
+              elder={elder}
+              collapsed={!clipOpen}
+              onEnded={finishClip}
+            />
             <button
               onClick={finishClip}
               className="mt-4 w-full cursor-pointer rounded-full border border-white/15 py-3 text-sm font-semibold text-lavender300 transition-colors hover:text-white"
