@@ -7,6 +7,7 @@ import { BigButton, PaperCard, SectionTitle } from '../../components/elderUI.jsx
 import ElderSprite from '../../components/ElderSprite.jsx'
 import Icon from '../../components/Icon.jsx'
 import Select from '../../components/Select.jsx'
+import RoleSwitch from '../../components/RoleSwitch.jsx'
 import { ElderAvatar } from '../../components/ElderSprite.jsx'
 import { thaiDate } from '../../components/ui.jsx'
 
@@ -33,7 +34,9 @@ export default function ElderHome() {
 
       {/* ── Balance: the one number that matters ── */}
       <PaperCard className="mt-5 overflow-hidden">
-        <div className="relative bg-violet800 px-6 py-7 text-center text-white">
+        {/* A deep violet panel is a dark surface wherever it appears, so it
+            keeps the dark register's gold rather than the light one's amber. */}
+        <div data-theme="dark" className="relative bg-violet800 px-6 py-7 text-center text-white">
           <div className="orbit-ring absolute -right-14 -top-16 h-48 w-48 opacity-45" aria-hidden="true" />
           <div className="orbit-ring absolute -left-10 top-16 h-32 w-32 opacity-25" aria-hidden="true" />
           <p className="relative text-[17px] text-gold200">แต้มภูมิปัญญาที่ใช้ได้ตอนนี้</p>
@@ -101,8 +104,13 @@ export default function ElderHome() {
         </Link>
       </section>
 
+      {/* ── Back to the explorer register ── */}
+      <div className="mt-8">
+        <RoleSwitch tone="paper" />
+      </div>
+
       {/* ── Demo-only identity switch ── */}
-      <section className="mt-8 rounded-2xl border border-dashed border-maroon900/25 p-4">
+      <section className="mt-4 rounded-2xl border border-dashed border-maroon900/25 p-4">
         <span id="elder-pick-label" className="block text-[15px] font-semibold text-maroon900/75">
           สำหรับสาธิต · เข้าใช้งานในชื่อผู้สูงอายุท่านอื่น
         </span>

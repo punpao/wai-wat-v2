@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   วัยวัฒน์ (Wai-Wat) — theme tokens
+   กาลวัฒน์ (Kala-Wat) — theme tokens
    Brand palette sampled from the Moral Hackathon 2026 poster
    (see CI guide). Treat these as the single source of truth.
    The two `paper` tints are the only derived values: they exist
@@ -28,9 +28,61 @@
   --radius-card: 1.25rem;
 }
 
-:root {
-  --gradient-hero: linear-gradient(135deg, #5C1432 0%, #501D65 55%, #653877 100%);
+/* ─────────────────────────────────────────────────────────────
+   Theme registers — dark is home, light is the same design
+   transposed into the palette's own paper tints rather than a
+   second brand invented alongside it.
+
+   Components keep writing the dark vocabulary they were built in
+   (text-white, bg-white/10, bg-black/25 …). The light register
+   re-points that vocabulary below, in one place, instead of
+   scattering a conditional through all 247 uses of it.
+   ───────────────────────────────────────────────────────────── */
+:root,
+[data-theme='dark'] {
+  --app-bg: linear-gradient(135deg, #5C1432 0%, #501D65 55%, #653877 100%);
+  --app-body: #3D1440;
+  --app-ink: #FFFFFF;
+  --app-ink-muted: #B38CC0;
+  --app-accent: #FFD3A2;
+  --app-raised: rgba(255, 255, 255, 0.08);
+  --app-raised-hi: rgba(255, 255, 255, 0.18);
+  --app-sunken: rgba(0, 0, 0, 0.25);
+  --app-hairline: rgba(255, 255, 255, 0.12);
+  --app-chrome: rgba(74, 26, 88, 0.78);
+  --app-nav: rgba(62, 18, 73, 0.88);
+  --app-sheet: #43164C;
+  --app-panel: #2E0F35;
+  --app-ground: #3E1249;
+  --app-glass: color-mix(in srgb, #653877 55%, transparent);
+  --app-orbit: rgba(255, 211, 162, 0.35);
   color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --app-bg: linear-gradient(135deg, #FFF4E9 0%, #F6E2CC 58%, #EFD3BE 100%);
+  --app-body: #FFF4E9;
+  --app-ink: #3E0E27;
+  --app-ink-muted: #7C5570;
+  /* gold200 disappears on paper, so the accent role deepens to an amber
+     that still reads as the same warm family at 4.5:1 on this ground. */
+  --app-accent: #A2451A;
+  --app-raised: rgba(255, 255, 255, 0.82);
+  --app-raised-hi: #FFFFFF;
+  --app-sunken: rgba(92, 20, 50, 0.06);
+  --app-hairline: rgba(92, 20, 50, 0.14);
+  --app-chrome: rgba(255, 244, 233, 0.88);
+  --app-nav: rgba(255, 244, 233, 0.93);
+  --app-sheet: #FFF9F2;
+  --app-panel: #FFF4E9;
+  --app-ground: #FFF4E9;
+  --app-glass: rgba(255, 255, 255, 0.76);
+  --app-orbit: rgba(92, 20, 50, 0.22);
+  color-scheme: light;
+}
+
+:root {
+  --gradient-hero: var(--app-bg);
 }
 
 * { -webkit-tap-highlight-color: transparent; }
@@ -40,8 +92,8 @@ html, body, #root { height: 100%; }
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background: #3D1440;
-  color: #fff;
+  background: var(--app-body);
+  color: var(--app-ink);
   overscroll-behavior-y: none;
 }
 
@@ -51,7 +103,7 @@ body {
    progress ring — one motif doing three jobs. */
 .orbit-ring {
   border-radius: 9999px;
-  border: 1.5px dashed rgba(255, 211, 162, 0.35);
+  border: 1.5px dashed var(--app-orbit);
 }
 
 .stripe-edge {
@@ -65,9 +117,9 @@ body {
 }
 
 .glass {
-  background: color-mix(in srgb, #653877 55%, transparent);
+  background: var(--app-glass);
   backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--app-hairline);
 }
 
 .gold-number {
@@ -76,6 +128,14 @@ body {
   background-clip: text;
   color: transparent;
   font-variant-numeric: tabular-nums;
+}
+
+/* The gold ramp is a light-on-dark device; on paper it needs the darker
+   half of the same palette to stay a number rather than a smudge. */
+[data-theme='light'] .gold-number {
+  background: linear-gradient(100deg, #A2451A 0%, #C1462A 55%, #B03060 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 /* focus visibility — never removed, only restyled */
@@ -165,6 +225,152 @@ body {
     animation: none !important;
   }
   * { transition-duration: 1ms !important; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Light register — re-pointing the dark vocabulary.
+
+   Selectors match " bg-white/" or a class-attribute start rather
+   than "bg-white/" anywhere, so `hover:bg-white/18` is not mistaken
+   for a resting fill: a quiet button would otherwise come out
+   filled at rest. Scrims (bg-black/45 and up) and the QR card's
+   bg-white/95 are deliberately left alone — a modal veil and a
+   scannable code are dark and white in both registers.
+   ───────────────────────────────────────────────────────────── */
+[data-theme='light'] [class^='text-white'],
+[data-theme='light'] [class*=' text-white'] {
+  color: var(--app-ink);
+}
+/* …except where the element carries its own solid brand fill. */
+[data-theme='light'] [class*='bg-coral500']:not([class*='bg-coral500/']),
+[data-theme='light'] [class*='bg-violet800'] {
+  color: #fff;
+}
+
+[data-theme='light'] [class^='text-lavender300'],
+[data-theme='light'] [class*=' text-lavender300'],
+[data-theme='light'] [class*=':text-lavender300'] {
+  color: var(--app-ink-muted);
+}
+
+[data-theme='light'] [class^='text-gold200'],
+[data-theme='light'] [class*=' text-gold200'],
+[data-theme='light'] [class^='text-gold100'],
+[data-theme='light'] [class*=' text-gold100'] {
+  color: var(--app-accent);
+}
+
+[data-theme='light'] [class*='hover:text-white']:hover {
+  color: var(--app-ink);
+}
+[data-theme='light'] [class*='hover:text-maroon900']:hover {
+  color: var(--app-ink);
+}
+
+[data-theme='light'] [class^='bg-white/'],
+[data-theme='light'] [class*=' bg-white/']:not([class*='bg-white/95']) {
+  background-color: var(--app-raised);
+}
+[data-theme='light'] [class*='hover:bg-white/']:hover {
+  background-color: var(--app-raised-hi);
+}
+
+[data-theme='light'] [class^='bg-black/2'],
+[data-theme='light'] [class*=' bg-black/2'],
+[data-theme='light'] [class^='bg-black/3'],
+[data-theme='light'] [class*=' bg-black/3'] {
+  background-color: var(--app-sunken);
+}
+
+[data-theme='light'] [class^='ring-white/'],
+[data-theme='light'] [class*=' ring-white/'] {
+  --tw-ring-color: var(--app-hairline);
+}
+[data-theme='light'] [class^='border-white/'],
+[data-theme='light'] [class*=' border-white/'] {
+  border-color: var(--app-hairline);
+}
+
+[data-theme='light'] .stripe-edge {
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgba(92, 20, 50, 0.10) 0px,
+    rgba(92, 20, 50, 0.10) 2px,
+    transparent 2px,
+    transparent 11px
+  );
+}
+
+/* ── Dark islands inside a light page ──
+   The AR screen and the map panel opt back into dark with their own
+   data-theme. Re-pointing the vocabulary above is ancestor-based, so a
+   nested opt-out cannot win on specificity alone — these repeat the dark
+   values one level deeper, which is what actually restores them.
+
+   Scoped to light-over-dark rather than to `[data-theme='dark']` alone,
+   so that plain dark mode keeps Tailwind's own utilities: flattening
+   eleven distinct white opacities onto one value would quietly redecorate
+   the theme the app is mainly used in. */
+/* The island sets its own base colour first: text inside it that never
+   named a colour — a plain heading, say — inherits from the page wrapper,
+   which the rules above have already turned to dark ink. */
+[data-theme='light'] [data-theme='dark'] {
+  color: #fff;
+}
+[data-theme='light'] [data-theme='dark'] [class^='text-white'],
+[data-theme='light'] [data-theme='dark'] [class*=' text-white'] {
+  color: #fff;
+}
+[data-theme='light'] [data-theme='dark'] [class^='text-lavender300'],
+[data-theme='light'] [data-theme='dark'] [class*=' text-lavender300'],
+[data-theme='light'] [data-theme='dark'] [class*=':text-lavender300'] {
+  color: #b38cc0;
+}
+[data-theme='light'] [data-theme='dark'] [class^='text-gold200'],
+[data-theme='light'] [data-theme='dark'] [class*=' text-gold200'] {
+  color: #ffd3a2;
+}
+[data-theme='light'] [data-theme='dark'] [class^='text-gold100'],
+[data-theme='light'] [data-theme='dark'] [class*=' text-gold100'] {
+  color: #ffc99b;
+}
+[data-theme='light'] [data-theme='dark'] [class*='hover:text-white']:hover {
+  color: #fff;
+}
+[data-theme='light'] [data-theme='dark'] [class^='bg-white/'],
+[data-theme='light'] [data-theme='dark'] [class*=' bg-white/']:not([class*='bg-white/95']) {
+  background-color: rgba(255, 255, 255, 0.09);
+}
+[data-theme='light'] [data-theme='dark'] [class*='hover:bg-white/']:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+[data-theme='light'] [data-theme='dark'] [class^='bg-black/2'],
+[data-theme='light'] [data-theme='dark'] [class*=' bg-black/2'],
+[data-theme='light'] [data-theme='dark'] [class^='bg-black/3'],
+[data-theme='light'] [data-theme='dark'] [class*=' bg-black/3'] {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+[data-theme='light'] [data-theme='dark'] [class^='ring-white/'],
+[data-theme='light'] [data-theme='dark'] [class*=' ring-white/'] {
+  --tw-ring-color: rgba(255, 255, 255, 0.14);
+}
+[data-theme='light'] [data-theme='dark'] [class^='border-white/'],
+[data-theme='light'] [data-theme='dark'] [class*=' border-white/'] {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+[data-theme='light'] [data-theme='dark'] .gold-number {
+  background: linear-gradient(100deg, #ffd3a2 0%, #ffc99b 60%, #f16c95 130%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+[data-theme='light'] [data-theme='dark'] .stripe-edge {
+  background-image: repeating-linear-gradient(
+    115deg,
+    rgba(255, 211, 162, 0.14) 0px,
+    rgba(255, 211, 162, 0.14) 2px,
+    transparent 2px,
+    transparent 11px
+  );
 }
 
 /* ── Leaflet skin ── */

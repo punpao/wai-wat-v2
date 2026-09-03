@@ -107,7 +107,14 @@ export default function MapJourney() {
 
       {/* ── Map ── */}
       <section className="relative mx-auto max-w-2xl px-4 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:mx-0 lg:max-w-none lg:px-0">
-        <div className="relative h-[64vh] min-h-[440px] overflow-hidden rounded-card ring-1 ring-white/12 lg:sticky lg:top-20 lg:h-[calc(100dvh-9rem)]">
+        {/* Pinned dark in both registers. The tiles and the illustrated
+            layer are drawn on a night ground, so this stays a dark island
+            on a light page — like a photograph — and the labels floating
+            over it keep the light-on-dark contrast they were built for. */}
+        <div
+          data-theme="dark"
+          className="relative h-[64vh] min-h-[440px] overflow-hidden rounded-card ring-1 ring-white/12 lg:sticky lg:top-20 lg:h-[calc(100dvh-9rem)]"
+        >
           {location ? (
             <MapLayer
               location={location}
