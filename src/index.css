@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   วัยวัฒน์ (Wai-Wat) — theme tokens
+   กาลวัฒน์ (Kala-Wat) — theme tokens
    Brand palette sampled from the Moral Hackathon 2026 poster
    (see CI guide). Treat these as the single source of truth.
    The two `paper` tints are the only derived values: they exist
