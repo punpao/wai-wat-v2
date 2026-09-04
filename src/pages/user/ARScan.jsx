@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { checkpointById } from '../../data/locations.js'
 import { elderById } from '../../data/elders.js'
 import { BADGES } from '../../data/rewards.js'
+import { workshopByCheckpoint, workshopsByElder } from '../../data/workshops.js'
 import { storage } from '../../lib/storage.js'
 import { useStore } from '../../lib/useStore.js'
 import { usePosition } from '../../lib/position.jsx'
@@ -18,6 +19,8 @@ import {
 import { useHeading } from '../../lib/useHeading.js'
 import ClipPlayer, { ElderReveal } from '../../components/ClipPlayer.jsx'
 import EncourageBox from '../../components/EncourageBox.jsx'
+import RegisterSheet from '../../components/RegisterSheet.jsx'
+import WorkshopCard from '../../components/WorkshopCard.jsx'
 import { Button } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
@@ -52,10 +55,13 @@ export default function ARScan() {
   const compass = useHeading()
 
   const [phase, setPhase] = useState('hunting') // hunting | found | clip | reward
-  const [cam, setCam] = useState('starting') // starting | on | off | blocked
+  const [cam, setCam] = useState('starting') // starting | on | blocked | needstap
   const [camMsg, setCamMsg] = useState('')
+  const [stream, setStream] = useState(null)
+  const [attempt, setAttempt] = useState(0)
   const [simHeat, setSimHeat] = useState(100)
   const [simHint, setSimHint] = useState(SIM_HINTS[0])
+  const [registering, setRegistering] = useState(null)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
   const wasNew = useRef(false)
@@ -78,53 +84,99 @@ export default function ARScan() {
 
   const onTarget = liveTracking && realDist <= FOUND_RADIUS_M && Math.abs(hint.rot) <= 45
 
-  /* ── camera ── */
-  const startCamera = useCallback(async () => {
-    // getUserMedia only exists on secure origins (https or localhost).
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setCam('blocked')
-      setCamMsg(
-        window.isSecureContext
-          ? 'เบราว์เซอร์นี้ไม่รองรับการเปิดกล้อง ลองเปิดด้วย Chrome หรือ Safari'
-          : 'ต้องเปิดผ่าน https จึงจะใช้กล้องได้',
-      )
-      return
-    }
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: 'environment' } },
-        audio: false,
-      })
-      streamRef.current = s
-      if (videoRef.current) {
-        videoRef.current.srcObject = s
-        // iOS Safari does not always autoplay a stream without this nudge.
+  /* ── camera ──
+   *
+   * The <video> stays mounted for the whole screen and is faded in, rather
+   * than being swapped in once the stream arrives. Mounting it late meant
+   * videoRef was still null when getUserMedia resolved, so srcObject was
+   * never assigned and the feed stayed black on real devices — dev only
+   * looked fine because StrictMode runs the effect twice.
+   */
+  useEffect(() => {
+    let cancelled = false
+    let opened = null
+
+    const explain = (err) =>
+      err?.name === 'NotAllowedError'
+        ? 'ยังไม่ได้อนุญาตให้ใช้กล้อง — กดอนุญาตในเบราว์เซอร์แล้วลองอีกครั้ง'
+        : err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError'
+          ? 'ไม่พบกล้องที่ใช้ได้บนอุปกรณ์นี้'
+          : err?.name === 'NotReadableError'
+            ? 'กล้องถูกแอปอื่นใช้อยู่ ปิดแอปนั้นแล้วลองใหม่'
+            : 'เปิดกล้องไม่ได้ (บางแอปที่เปิดเว็บในตัว เช่น LINE หรือ Facebook ไม่อนุญาต) — ลองเปิดใน Chrome หรือ Safari'
+
+    ;(async () => {
+      // getUserMedia only exists on secure origins (https or localhost).
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCam('blocked')
+        setCamMsg(
+          window.isSecureContext
+            ? 'เบราว์เซอร์นี้ไม่รองรับการเปิดกล้อง ลองเปิดด้วย Chrome หรือ Safari'
+            : 'ต้องเปิดผ่าน https จึงจะใช้กล้องได้',
+        )
+        return
+      }
+
+      // Some Android cameras reject a facingMode constraint outright, so fall
+      // back to any camera rather than failing the whole screen.
+      let err
+      for (const constraints of [
+        { video: { facingMode: { ideal: 'environment' } }, audio: false },
+        { video: true, audio: false },
+      ]) {
         try {
-          await videoRef.current.play()
-        } catch {
-          /* the muted+playsInline video will start on its own */
+          opened = await navigator.mediaDevices.getUserMedia(constraints)
+          break
+        } catch (e) {
+          err = e
+          if (e?.name === 'NotAllowedError') break
         }
       }
-      setCam('on')
-    } catch (err) {
-      setCam('blocked')
-      setCamMsg(
-        err?.name === 'NotAllowedError'
-          ? 'ยังไม่ได้อนุญาตให้ใช้กล้อง — กดอนุญาตในเบราว์เซอร์แล้วลองอีกครั้ง'
-          : err?.name === 'NotFoundError'
-            ? 'ไม่พบกล้องบนอุปกรณ์นี้'
-            : 'เปิดกล้องไม่ได้ (บางแอปที่เปิดเว็บในตัว เช่น LINE หรือ Facebook ไม่อนุญาต) — ลองเปิดใน Chrome หรือ Safari',
-      )
-    }
-  }, [])
 
-  useEffect(() => {
-    startCamera()
+      if (cancelled) {
+        opened?.getTracks().forEach((t) => t.stop())
+        return
+      }
+      if (!opened) {
+        setCam('blocked')
+        setCamMsg(explain(err))
+        return
+      }
+      streamRef.current = opened
+      setStream(opened)
+    })()
+
     return () => {
-      streamRef.current?.getTracks().forEach((t) => t.stop())
+      cancelled = true
+      opened?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
     }
-  }, [startCamera])
+  }, [attempt])
+
+  // Attach the stream once both it and the element exist, and keep it playing:
+  // iOS suspends the feed when the tab goes to the background.
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v || !stream) return
+    v.srcObject = stream
+    const play = () =>
+      v
+        .play()
+        .then(() => setCam('on'))
+        // Autoplay refused (Low Power Mode, older iOS) — a tap will start it.
+        .catch(() => setCam('needstap'))
+    play()
+    const onVisible = () => document.visibilityState === 'visible' && play()
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [stream])
+
+  const startCamera = useCallback(() => {
+    setCam('starting')
+    setCamMsg('')
+    setStream(null)
+    setAttempt((n) => n + 1)
+  }, [])
 
   // Keep a live GPS watch running for the whole hunt.
   useEffect(() => {
@@ -182,27 +234,32 @@ export default function ARScan() {
   const heatInfo = heatOf(heat)
   const found = state.discoveries.find((d) => d.checkpointId === cp.id)
   const earned = BADGES.filter((b) => b.need === state.discoveries.length)
+  // The class anchored at this exact spot, or failing that anything else this
+  // elder teaches — most only have one, but it keeps the card from going
+  // empty for a co-hosted workshop whose "home" checkpoint is elsewhere.
+  const relatedWorkshop = workshopByCheckpoint(cp.id) ?? workshopsByElder(cp.elderId)[0]
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-black">
-      {/* ── camera feed (or its stand-in) ── */}
-      {cam !== 'on' ? (
-        <div
-          className="fixed inset-0"
-          style={{
-            background:
-              'radial-gradient(120% 80% at 30% 20%, #653877 0%, #501D65 45%, #2B0F30 100%)',
-          }}
-        />
-      ) : (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="fixed inset-0 h-full w-full object-cover"
-        />
-      )}
+      {/* ── camera feed (or its stand-in) ──
+          The <video> stays mounted the whole time — see the effect above for
+          why — and only fades in once a frame is actually playing. */}
+      <div
+        className="fixed inset-0"
+        style={{
+          background:
+            'radial-gradient(120% 80% at 30% 20%, #653877 0%, #501D65 45%, #2B0F30 100%)',
+        }}
+      />
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className={`fixed inset-0 h-full w-full object-cover transition-opacity duration-300 ${
+          cam === 'on' ? 'opacity-100' : 'opacity-0'
+        }`}
+      />
       <div className="fixed inset-0 bg-gradient-to-b from-[#2B0F30]/85 via-[#2B0F30]/55 to-[#2B0F30]/95" />
       <div
         className="fixed inset-0"
@@ -249,6 +306,20 @@ export default function ARScan() {
           </button>
           <p className="mt-2 text-[11px] text-lavender300">ขั้นตอนอื่นยังทำงานได้ตามปกติ</p>
         </div>
+      )}
+
+      {/* iOS in Low Power Mode (and some older Safari builds) refuse
+          autoplay even for a muted stream — one tap is all it needs. */}
+      {cam === 'needstap' && (
+        <button
+          onClick={() => videoRef.current?.play().then(() => setCam('on')).catch(() => {})}
+          className="fixed inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/40"
+        >
+          <span className="grid h-16 w-16 place-items-center rounded-full bg-white/15 ring-1 ring-white/25">
+            <Icon name="scan" size={28} className="text-white" />
+          </span>
+          <span className="text-sm font-semibold text-white">แตะเพื่อเปิดกล้อง</span>
+        </button>
       )}
 
       {/* ── phase: hunting ── */}
@@ -433,6 +504,19 @@ export default function ARScan() {
             <EncourageBox clip={cp.clip} elder={elder} checkpointName={cp.name} />
           </div>
 
+          {/* And if the story made them want to learn the craft, the class
+              is one tap away — right where the wanting is, not buried in a
+              tab they have to remember exists. */}
+          {relatedWorkshop && (
+            <div className="mt-6 w-full max-w-sm text-left">
+              <p className="mb-2.5 flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold200">
+                <Icon name="workshop" size={14} />
+                อยากลงมือทำเองไหม
+              </p>
+              <WorkshopCard workshop={relatedWorkshop} onRegister={setRegistering} />
+            </div>
+          )}
+
           <div className="mt-6 flex w-full max-w-sm flex-col gap-2.5">
             <Button
               size="lg"
@@ -457,6 +541,12 @@ export default function ARScan() {
           )}
         </div>
       )}
+
+      <RegisterSheet
+        workshop={registering}
+        open={!!registering}
+        onClose={() => setRegistering(null)}
+      />
     </div>
   )
 }

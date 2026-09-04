@@ -145,5 +145,9 @@ export const workshopsByLocation = (locationId) =>
 export const workshopByCheckpoint = (checkpointId) =>
   WORKSHOPS.find((w) => w.checkpointId === checkpointId)
 
+/** Every class a given elder teaches, wherever it is anchored. */
+export const workshopsByElder = (elderId) =>
+  WORKSHOPS.filter((w) => w.elderIds.includes(elderId))
+
 /** What to show before an area is picked. */
 export const trendingWorkshops = () => WORKSHOPS.filter((w) => w.trending)
