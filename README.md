@@ -1,4 +1,4 @@
-# วัยวัฒน์ (Wai-Wat) — AR Wisdom Trail
+# กาลวัฒน์ (Kala-Wat) — AR Wisdom Trail
 
 ต้นแบบ (prototype) สำหรับ **Moral Hackathon 2026** — แอปเดินสำรวจสถานที่จริงแบบ Pokémon GO
 แต่สิ่งที่ตามหาคือ **ผู้สูงอายุและเรื่องเล่าประจำย่าน** ไม่ใช่มอนสเตอร์

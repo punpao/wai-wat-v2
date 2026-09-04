@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { checkpointById } from '../../data/locations.js'
 import { elderById } from '../../data/elders.js'
 import { BADGES } from '../../data/rewards.js'
-import { workshopByCheckpoint, workshopsByElder } from '../../data/workshops.js'
+import { workshopSuggestionsFor } from '../../data/workshops.js'
 import { storage } from '../../lib/storage.js'
 import { useStore } from '../../lib/useStore.js'
 import { usePosition } from '../../lib/position.jsx'
@@ -19,8 +19,7 @@ import {
 import { useHeading } from '../../lib/useHeading.js'
 import ClipPlayer, { ElderReveal } from '../../components/ClipPlayer.jsx'
 import EncourageBox from '../../components/EncourageBox.jsx'
-import RegisterSheet from '../../components/RegisterSheet.jsx'
-import WorkshopCard from '../../components/WorkshopCard.jsx'
+import WorkshopInvite from '../../components/WorkshopInvite.jsx'
 import { Button } from '../../components/ui.jsx'
 import Icon from '../../components/Icon.jsx'
 
@@ -55,15 +54,19 @@ export default function ARScan() {
   const compass = useHeading()
 
   const [phase, setPhase] = useState('hunting') // hunting | found | clip | reward
+  // Folded by default: the reveal is the point of this screen, and the
+  // folded panel still delivers the story a line at a time.
+  const [clipOpen, setClipOpen] = useState(false)
   const [cam, setCam] = useState('starting') // starting | on | blocked | needstap
   const [camMsg, setCamMsg] = useState('')
-  const [stream, setStream] = useState(null)
-  const [attempt, setAttempt] = useState(0)
   const [simHeat, setSimHeat] = useState(100)
   const [simHint, setSimHint] = useState(SIM_HINTS[0])
-  const [registering, setRegistering] = useState(null)
+  const [stream, setStream] = useState(null)
   const videoRef = useRef(null)
   const streamRef = useRef(null)
+  // Bumped whenever a camera attempt is superseded, so a getUserMedia
+  // that resolves late cannot hand its stream to a screen that moved on.
+  const camGen = useRef(0)
   const wasNew = useRef(false)
 
   const realDist =
@@ -84,83 +87,83 @@ export default function ARScan() {
 
   const onTarget = liveTracking && realDist <= FOUND_RADIUS_M && Math.abs(hint.rot) <= 45
 
-  /* ── camera ──
-   *
-   * The <video> stays mounted for the whole screen and is faded in, rather
-   * than being swapped in once the stream arrives. Mounting it late meant
-   * videoRef was still null when getUserMedia resolved, so srcObject was
-   * never assigned and the feed stayed black on real devices — dev only
-   * looked fine because StrictMode runs the effect twice.
-   */
+  /* ── camera ── */
+  const startCamera = useCallback(async () => {
+    // getUserMedia only exists on secure origins (https or localhost).
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCam('blocked')
+      setCamMsg(
+        window.isSecureContext
+          ? 'เบราว์เซอร์นี้ไม่รองรับการเปิดกล้อง ลองเปิดด้วย Chrome หรือ Safari'
+          : 'ต้องเปิดผ่าน https จึงจะใช้กล้องได้',
+      )
+      return
+    }
+    const gen = ++camGen.current
+    setCam('starting')
+
+    // Some Android cameras reject a facingMode constraint outright, so fall
+    // back to any camera rather than failing the whole screen over it.
+    let s, err
+    for (const constraints of [
+      { video: { facingMode: { ideal: 'environment' } }, audio: false },
+      { video: true, audio: false },
+    ]) {
+      try {
+        s = await navigator.mediaDevices.getUserMedia(constraints)
+        break
+      } catch (e) {
+        err = e
+        if (e?.name === 'NotAllowedError') break
+      }
+    }
+
+    // A remount or a fast retry can land here after this attempt was
+    // superseded — hand the camera straight back rather than leaving a
+    // second one running behind the screen.
+    if (gen !== camGen.current) {
+      s?.getTracks().forEach((t) => t.stop())
+      return
+    }
+    if (!s) {
+      setCam('blocked')
+      setCamMsg(
+        err?.name === 'NotAllowedError'
+          ? 'ยังไม่ได้อนุญาตให้ใช้กล้อง — กดอนุญาตในเบราว์เซอร์แล้วลองอีกครั้ง'
+          : err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError'
+            ? 'ไม่พบกล้องที่ใช้ได้บนอุปกรณ์นี้'
+            : err?.name === 'NotReadableError'
+              ? 'กล้องถูกแอปอื่นใช้อยู่ ปิดแอปนั้นแล้วลองใหม่'
+              : 'เปิดกล้องไม่ได้ (บางแอปที่เปิดเว็บในตัว เช่น LINE หรือ Facebook ไม่อนุญาต) — ลองเปิดใน Chrome หรือ Safari',
+      )
+      return
+    }
+    streamRef.current = s
+    // Handing the stream to the element is the attach effect's job. Doing
+    // it here used to mean assigning to a ref that was still null, because
+    // the <video> did not exist until setCam('on') had already run.
+    setStream(s)
+  }, [])
+
   useEffect(() => {
-    let cancelled = false
-    let opened = null
-
-    const explain = (err) =>
-      err?.name === 'NotAllowedError'
-        ? 'ยังไม่ได้อนุญาตให้ใช้กล้อง — กดอนุญาตในเบราว์เซอร์แล้วลองอีกครั้ง'
-        : err?.name === 'NotFoundError' || err?.name === 'OverconstrainedError'
-          ? 'ไม่พบกล้องที่ใช้ได้บนอุปกรณ์นี้'
-          : err?.name === 'NotReadableError'
-            ? 'กล้องถูกแอปอื่นใช้อยู่ ปิดแอปนั้นแล้วลองใหม่'
-            : 'เปิดกล้องไม่ได้ (บางแอปที่เปิดเว็บในตัว เช่น LINE หรือ Facebook ไม่อนุญาต) — ลองเปิดใน Chrome หรือ Safari'
-
-    ;(async () => {
-      // getUserMedia only exists on secure origins (https or localhost).
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setCam('blocked')
-        setCamMsg(
-          window.isSecureContext
-            ? 'เบราว์เซอร์นี้ไม่รองรับการเปิดกล้อง ลองเปิดด้วย Chrome หรือ Safari'
-            : 'ต้องเปิดผ่าน https จึงจะใช้กล้องได้',
-        )
-        return
-      }
-
-      // Some Android cameras reject a facingMode constraint outright, so fall
-      // back to any camera rather than failing the whole screen.
-      let err
-      for (const constraints of [
-        { video: { facingMode: { ideal: 'environment' } }, audio: false },
-        { video: true, audio: false },
-      ]) {
-        try {
-          opened = await navigator.mediaDevices.getUserMedia(constraints)
-          break
-        } catch (e) {
-          err = e
-          if (e?.name === 'NotAllowedError') break
-        }
-      }
-
-      if (cancelled) {
-        opened?.getTracks().forEach((t) => t.stop())
-        return
-      }
-      if (!opened) {
-        setCam('blocked')
-        setCamMsg(explain(err))
-        return
-      }
-      streamRef.current = opened
-      setStream(opened)
-    })()
-
+    startCamera()
     return () => {
-      cancelled = true
-      opened?.getTracks().forEach((t) => t.stop())
+      camGen.current += 1
+      streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
     }
-  }, [attempt])
+  }, [startCamera])
 
-  // Attach the stream once both it and the element exist, and keep it playing:
-  // iOS suspends the feed when the tab goes to the background.
+  /* The <video> is mounted for the whole hunt, so by the time a stream
+     exists there is always a real element to give it to. Also keeps it
+     playing across a background/foreground cycle — iOS suspends the feed
+     when the tab is hidden and does not always resume it on its own. */
   useEffect(() => {
-    const v = videoRef.current
-    if (!v || !stream) return
-    v.srcObject = stream
+    const el = videoRef.current
+    if (!el || !stream) return
+    el.srcObject = stream
     const play = () =>
-      v
+      el
         .play()
         .then(() => setCam('on'))
         // Autoplay refused (Low Power Mode, older iOS) — a tap will start it.
@@ -168,15 +171,11 @@ export default function ARScan() {
     play()
     const onVisible = () => document.visibilityState === 'visible' && play()
     document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      el.srcObject = null
+    }
   }, [stream])
-
-  const startCamera = useCallback(() => {
-    setCam('starting')
-    setCamMsg('')
-    setStream(null)
-    setAttempt((n) => n + 1)
-  }, [])
 
   // Keep a live GPS watch running for the whole hunt.
   useEffect(() => {
@@ -234,37 +233,51 @@ export default function ARScan() {
   const heatInfo = heatOf(heat)
   const found = state.discoveries.find((d) => d.checkpointId === cp.id)
   const earned = BADGES.filter((b) => b.need === state.discoveries.length)
-  // The class anchored at this exact spot, or failing that anything else this
-  // elder teaches — most only have one, but it keeps the card from going
-  // empty for a co-hosted workshop whose "home" checkpoint is elsewhere.
-  const relatedWorkshop = workshopByCheckpoint(cp.id) ?? workshopsByElder(cp.elderId)[0]
+  // Null only where the whole trail teaches nothing.
+  const suggestion = workshopSuggestionsFor(cp)
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden bg-black">
       {/* ── camera feed (or its stand-in) ──
-          The <video> stays mounted the whole time — see the effect above for
-          why — and only fades in once a frame is actually playing. */}
-      <div
-        className="fixed inset-0"
-        style={{
-          background:
-            'radial-gradient(120% 80% at 30% 20%, #653877 0%, #501D65 45%, #2B0F30 100%)',
-        }}
-      />
+          The <video> is never unmounted: a video element that only appears
+          once the camera is already open is one the stream was never handed
+          to, which is a black screen over a camera that is genuinely on. */}
       <video
         ref={videoRef}
         autoPlay
         playsInline
         muted
-        className={`fixed inset-0 h-full w-full object-cover transition-opacity duration-300 ${
-          cam === 'on' ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`fixed inset-0 h-full w-full object-cover ${cam === 'on' ? '' : 'opacity-0'}`}
       />
-      <div className="fixed inset-0 bg-gradient-to-b from-[#2B0F30]/85 via-[#2B0F30]/55 to-[#2B0F30]/95" />
-      <div
-        className="fixed inset-0"
-        style={{ background: 'radial-gradient(120% 70% at 50% 45%, transparent 0%, rgba(43,15,48,.72) 100%)' }}
-      />
+      {cam !== 'on' && (
+        <div
+          className="fixed inset-0"
+          style={{
+            background:
+              'radial-gradient(120% 80% at 30% 20%, #653877 0%, #501D65 45%, #2B0F30 100%)',
+          }}
+        />
+      )}
+      {/* The scrim keeps white text legible over whatever the lens sees, so
+          it lifts once there is a real feed underneath to look at — every
+          text block on this screen carries its own backing anyway. */}
+      {cam === 'on' ? (
+        <>
+          <div className="fixed inset-0 bg-gradient-to-b from-[#2B0F30]/55 via-[#2B0F30]/20 to-[#2B0F30]/75" />
+          <div
+            className="fixed inset-0"
+            style={{ background: 'radial-gradient(120% 70% at 50% 45%, transparent 0%, rgba(43,15,48,.45) 100%)' }}
+          />
+        </>
+      ) : (
+        <>
+          <div className="fixed inset-0 bg-gradient-to-b from-[#2B0F30]/85 via-[#2B0F30]/55 to-[#2B0F30]/95" />
+          <div
+            className="fixed inset-0"
+            style={{ background: 'radial-gradient(120% 70% at 50% 45%, transparent 0%, rgba(43,15,48,.72) 100%)' }}
+          />
+        </>
+      )}
 
       {/* ── top bar ── */}
       <div
@@ -446,14 +459,36 @@ export default function ARScan() {
         </div>
       )}
 
-      {/* ── phase: clip ── */}
+      {/* ── phase: clip ──
+          The elder sits in whatever room the panel leaves rather than at a
+          fixed offset, so folding the panel actually gives her the space
+          instead of opening a gap underneath her. */}
       {phase === 'clip' && (
-        <div className="relative z-20 flex min-h-dvh flex-col justify-end px-4 pb-8 pt-24">
-          <div className="pointer-events-none absolute inset-x-0 top-24 grid place-items-center">
+        <div className="relative z-20 flex h-dvh flex-col overflow-hidden px-4 pb-8 pt-24">
+          {/* min-h-0 lets this give up room when the panel is open, so the
+              transport and the finish button can never be pushed off the
+              bottom of a screen that does not scroll. */}
+          <div className="pointer-events-none flex min-h-0 flex-1 items-center justify-center overflow-hidden">
             <ElderReveal elder={elder} talking />
           </div>
-          <div className="anim-risein relative mx-auto w-full max-w-lg rounded-3xl bg-[#3A1244]/92 p-5 ring-1 ring-white/15 backdrop-blur-lg">
-            <ClipPlayer clip={cp.clip} elder={elder} onEnded={finishClip} />
+          <div className="anim-risein relative mx-auto w-full max-w-lg shrink-0 rounded-3xl bg-[#3A1244]/92 px-5 pb-5 pt-2 ring-1 ring-white/15 backdrop-blur-lg">
+            <button
+              onClick={() => setClipOpen((v) => !v)}
+              aria-expanded={clipOpen}
+              className="mb-1 flex w-full cursor-pointer flex-col items-center gap-1.5 py-1.5"
+            >
+              <span className="h-1.5 w-10 rounded-full bg-white/30" />
+              <span className="text-[11px] font-semibold text-lavender300">
+                {clipOpen ? 'ย่อลง เพื่อให้เห็นท่านชัดขึ้น' : 'แตะเพื่อดูบทเต็ม'}
+              </span>
+            </button>
+
+            <ClipPlayer
+              clip={cp.clip}
+              elder={elder}
+              collapsed={!clipOpen}
+              onEnded={finishClip}
+            />
             <button
               onClick={finishClip}
               className="mt-4 w-full cursor-pointer rounded-full border border-white/15 py-3 text-sm font-semibold text-lavender300 transition-colors hover:text-white"
@@ -498,24 +533,25 @@ export default function ARScan() {
             </div>
           )}
 
+          {/* Going and doing it belongs here too. The craft was just
+              explained by the person who does it, and the points to book
+              with are the ones awarded two lines up. */}
+          {suggestion && (
+            <div className="mt-6">
+              <WorkshopInvite
+                workshop={suggestion.primary}
+                reason={suggestion.reason}
+                others={suggestion.others}
+                elder={elder}
+              />
+            </div>
+          )}
+
           {/* Answering back belongs here, while the story is still in the ear —
               not three taps away in the history screen. */}
           <div className="mt-6 w-full max-w-sm rounded-3xl bg-black/35 p-4 ring-1 ring-white/12">
             <EncourageBox clip={cp.clip} elder={elder} checkpointName={cp.name} />
           </div>
-
-          {/* And if the story made them want to learn the craft, the class
-              is one tap away — right where the wanting is, not buried in a
-              tab they have to remember exists. */}
-          {relatedWorkshop && (
-            <div className="mt-6 w-full max-w-sm text-left">
-              <p className="mb-2.5 flex items-center gap-1.5 px-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-gold200">
-                <Icon name="workshop" size={14} />
-                อยากลงมือทำเองไหม
-              </p>
-              <WorkshopCard workshop={relatedWorkshop} onRegister={setRegistering} />
-            </div>
-          )}
 
           <div className="mt-6 flex w-full max-w-sm flex-col gap-2.5">
             <Button
@@ -541,12 +577,6 @@ export default function ARScan() {
           )}
         </div>
       )}
-
-      <RegisterSheet
-        workshop={registering}
-        open={!!registering}
-        onClose={() => setRegistering(null)}
-      />
     </div>
   )
 }

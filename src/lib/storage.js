@@ -15,6 +15,8 @@ const seed = () => {
   const cps = allCheckpoints()
   return {
     role: 'user',
+    /** 'dark' | 'light' — dark is the app's home register */
+    theme: 'dark',
     user: { name: 'ผู้สำรวจ', streak: 4, points: 0 },
     /** discoveries: [{ checkpointId, clipId, elderId, at, encouraged, comments:[] }] */
     discoveries: [],
@@ -89,6 +91,7 @@ export const storage = {
 
   setRole: (role) => update((s) => ({ ...s, role })),
   setElder: (elderId) => update((s) => ({ ...s, elderId })),
+  setTheme: (theme) => update((s) => ({ ...s, theme })),
 
   /** Mark a checkpoint found. Idempotent: replaying a clip never double-counts. */
   addDiscovery(checkpoint) {
@@ -197,7 +200,7 @@ export const storage = {
       s.elderWallet.balance -= reward.cost
       s.redemptions.unshift({
         id: `r-${Date.now()}`,
-        ref: `WW-${String(Date.now()).slice(-6)}`,
+        ref: `KW-${String(Date.now()).slice(-6)}`,
         rewardId: reward.id,
         name: reward.name,
         cost: reward.cost,

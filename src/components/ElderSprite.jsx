@@ -1,7 +1,12 @@
+import { useState } from 'react'
+
 /**
  * ElderSprite — the 2D "AR character" that appears over the camera feed
  * and doubles as the avatar everywhere else. Illustration only: there is
  * no computer vision behind it, by design.
+ *
+ * Elders carrying a `photo` are staged by <ElderPhoto /> instead; this
+ * stays the fallback for the ones still waiting on a photograph.
  */
 export default function ElderSprite({ elder, size = 200, talking = false, className = '' }) {
   const s = elder?.sprite ?? { skin: '#E7B48A', shirt: '#D9502F', hair: '#EEE', accessory: 'hat' }
@@ -89,6 +94,24 @@ export default function ElderSprite({ elder, size = 200, talking = false, classN
 /** Compact circular avatar used in lists. */
 export function ElderAvatar({ elder, size = 48 }) {
   const s = elder?.sprite ?? {}
+  // Keyed by src so swapping elders clears a previous elder's failure.
+  const [failedSrc, setFailedSrc] = useState(null)
+
+  // An elder with a photo should be the same person everywhere, not a
+  // photograph in the reveal and a drawing in the history list.
+  if (elder?.photo && failedSrc !== elder.photo) {
+    return (
+      <img
+        src={elder.photo}
+        onError={() => setFailedSrc(elder.photo)}
+        alt=""
+        draggable={false}
+        className="shrink-0 select-none rounded-full object-cover"
+        style={{ width: size, height: size, background: `${s.shirt ?? '#653877'}33` }}
+      />
+    )
+  }
+
   return (
     <span
       className="inline-flex shrink-0 items-end justify-center overflow-hidden rounded-full"

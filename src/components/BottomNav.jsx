@@ -6,10 +6,11 @@ import { useStore } from '../lib/useStore.js'
 import { useIsElder } from '../lib/role.js'
 import Icon from './Icon.jsx'
 
+/* Two tabs, not three: the profile moved to the header's top-left, which
+   is what lets the scan button sit in a real centre column below. */
 const USER_TABS = [
   { to: '/map', label: 'แผนที่', icon: 'map' },
   { to: '/workshops', label: 'เวิร์คช็อป', icon: 'workshop' },
-  { to: '/profile', label: 'โปรไฟล์', icon: 'user' },
 ]
 
 /* Elder register: never more than three tabs, always with a written label. */
@@ -30,9 +31,12 @@ function Bar({ children }) {
     <nav
       aria-label="เมนูหลัก"
       className={`fixed inset-x-0 bottom-0 z-[950] backdrop-blur-lg ${
-        isElder ? 'border-t border-maroon900/12 bg-paper/95' : 'border-t border-white/10 bg-[#3E1249]/88'
+        isElder ? 'border-t border-maroon900/12 bg-paper/95' : 'border-t border-white/10'
       }`}
-      style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
+      style={{
+        paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
+        background: isElder ? undefined : 'var(--app-nav)',
+      }}
     >
       {children}
     </nav>
@@ -117,22 +121,21 @@ function UserNav() {
     navigate(`/scan/${target.id}`)
   }
 
-  // Four slots: the scan button keeps a column of its own so it never sits
-  // on top of a tab's tap target.
+  // Three equal slots with scanning in the middle one — the button now sits
+  // on the bar's true centre line, not two-thirds along it as it did while a
+  // fourth tab was still here.
   return (
     <Bar>
-      <ul className="mx-auto grid max-w-lg grid-cols-4 items-end px-1 pt-1.5">
+      <ul className="mx-auto grid max-w-lg grid-cols-3 items-end px-1 pt-1.5">
         <li>
           <Tab {...USER_TABS[0]} />
-        </li>
-        <li>
-          <Tab {...USER_TABS[1]} />
         </li>
 
         <li className="relative flex justify-center">
           <button
             onClick={startScan}
-            className="absolute -top-9 grid h-16 w-16 cursor-pointer place-items-center rounded-full bg-coral500 text-white shadow-lg shadow-black/45 ring-4 ring-[#3E1249] transition-transform duration-200 hover:bg-[#e35c39] active:scale-95"
+            className="absolute -top-9 grid h-16 w-16 cursor-pointer place-items-center rounded-full bg-coral500 text-white shadow-lg shadow-black/45 ring-4 transition-transform duration-200 hover:bg-[#e35c39] active:scale-95"
+            style={{ '--tw-ring-color': 'var(--app-ground)' }}
             aria-label="เปิดหน้าสาธิต AR Scan"
           >
             <Icon name="scan" size={28} stroke={2.1} />
@@ -143,7 +146,7 @@ function UserNav() {
         </li>
 
         <li>
-          <Tab {...USER_TABS[2]} />
+          <Tab {...USER_TABS[1]} />
         </li>
       </ul>
     </Bar>

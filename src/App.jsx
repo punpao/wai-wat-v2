@@ -5,6 +5,7 @@ import { PositionProvider } from './lib/position.jsx'
 import { useStore } from './lib/useStore.js'
 import { storage } from './lib/storage.js'
 import { useIsElder } from './lib/role.js'
+import { useTheme } from './lib/theme.js'
 import AppHeader from './components/AppHeader.jsx'
 import BottomNav from './components/BottomNav.jsx'
 import DemoPanel from './components/DemoPanel.jsx'
@@ -21,6 +22,7 @@ export default function App() {
   const state = useStore()
   const { pathname } = useLocation()
   const isElder = useIsElder()
+  const { theme } = useTheme()
   // AR takes the whole viewport — no chrome over the camera feed.
   const immersive = pathname.startsWith('/scan')
 
@@ -33,11 +35,16 @@ export default function App() {
   return (
     <PositionProvider>
       <ToastHost>
+        {/* The scan screen is pinned dark whatever the theme: its text sits
+            over a live camera image, where a light register has no ground to
+            stand on. Everything below inherits from this attribute, so the
+            override needs no per-component escape hatch. */}
         <div
+          data-theme={immersive ? 'dark' : theme}
           className={`relative flex min-h-dvh flex-col ${
             isElder ? 'elder-scope bg-paper text-maroon900' : 'text-white'
           }`}
-          style={isElder ? undefined : { background: 'var(--gradient-hero)' }}
+          style={isElder ? undefined : { background: 'var(--app-bg)' }}
         >
           {!immersive && <AppHeader />}
 
