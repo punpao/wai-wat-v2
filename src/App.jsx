@@ -1,70 +1,39 @@
-import { useEffect } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ToastHost } from './components/ui.jsx'
 import { PositionProvider } from './lib/position.jsx'
-import { useStore } from './lib/useStore.js'
-import { storage } from './lib/storage.js'
-import { useIsElder } from './lib/role.js'
 import { useTheme } from './lib/theme.js'
 import AppHeader from './components/AppHeader.jsx'
-import BottomNav from './components/BottomNav.jsx'
-import DemoPanel from './components/DemoPanel.jsx'
-import MapJourney from './pages/user/MapJourney.jsx'
-import ARScan from './pages/user/ARScan.jsx'
-import Profile from './pages/user/Profile.jsx'
-import Workshops from './pages/user/Workshops.jsx'
-import WorkshopDetail from './pages/user/WorkshopDetail.jsx'
-import ElderHome from './pages/elder/ElderHome.jsx'
-import MyClips from './pages/elder/MyClips.jsx'
-import Redeem from './pages/elder/Redeem.jsx'
+import Home from './pages/Home.jsx'
+import PlaceDetail from './pages/PlaceDetail.jsx'
+import PlaceMap from './pages/PlaceMap.jsx'
+import Journey from './pages/Journey.jsx'
 
 export default function App() {
-  const state = useStore()
   const { pathname } = useLocation()
-  const isElder = useIsElder()
   const { theme } = useTheme()
-  // AR takes the whole viewport — no chrome over the camera feed.
-  const immersive = pathname.startsWith('/scan')
-
-  // Keep the stored role truthful when the route was reached by URL.
-  useEffect(() => {
-    const role = isElder ? 'elder' : 'user'
-    if (state.role !== role) storage.setRole(role)
-  }, [isElder, state.role])
+  // The journey takes the whole viewport: its text sits over photographs of
+  // the place, where a light register has no ground to stand on.
+  const immersive = pathname.includes('/journey/')
 
   return (
     <PositionProvider>
       <ToastHost>
-        {/* The scan screen is pinned dark whatever the theme: its text sits
-            over a live camera image, where a light register has no ground to
-            stand on. Everything below inherits from this attribute, so the
-            override needs no per-component escape hatch. */}
         <div
           data-theme={immersive ? 'dark' : theme}
-          className={`relative flex min-h-dvh flex-col ${
-            isElder ? 'elder-scope bg-paper text-maroon900' : 'text-white'
-          }`}
-          style={isElder ? undefined : { background: 'var(--app-bg)' }}
+          className="relative flex min-h-dvh flex-col text-white"
+          style={{ background: 'var(--app-bg)' }}
         >
           {!immersive && <AppHeader />}
 
-          <main className={`flex-1 ${immersive ? '' : 'pb-28'}`}>
+          <main className="flex-1">
             <Routes>
-              <Route path="/" element={<Navigate to={state.role === 'elder' ? '/elder' : '/map'} replace />} />
-              <Route path="/map" element={<MapJourney />} />
-              <Route path="/scan/:checkpointId" element={<ARScan />} />
-              <Route path="/workshops" element={<Workshops />} />
-              <Route path="/workshop/:workshopId" element={<WorkshopDetail />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/elder" element={<ElderHome />} />
-              <Route path="/elder/clips" element={<MyClips />} />
-              <Route path="/elder/redeem" element={<Redeem />} />
+              <Route path="/" element={<Home />} />
+              <Route path="/place/:placeId" element={<PlaceDetail />} />
+              <Route path="/place/:placeId/map" element={<PlaceMap />} />
+              <Route path="/place/:placeId/journey/:checkpointId" element={<Journey />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
-
-          {!immersive && <BottomNav />}
-          {!isElder && !immersive && <DemoPanel />}
         </div>
       </ToastHost>
     </PositionProvider>

@@ -25,36 +25,6 @@ export function Button({ variant = 'primary', size = 'md', className = '', child
   )
 }
 
-/* ── Surfaces ────────────────────────────────────────────── */
-export function Card({ className = '', children, ...rest }) {
-  return (
-    <div className={`glass rounded-card ${className}`} {...rest}>
-      {children}
-    </div>
-  )
-}
-
-export function Eyebrow({ children, className = '' }) {
-  return (
-    <p className={`text-[11px] font-semibold uppercase tracking-[0.22em] text-lavender300 ${className}`}>
-      {children}
-    </p>
-  )
-}
-
-/** Stat pill — glass fill, one oversized gold number. */
-export function StatPill({ value, label, suffix, className = '' }) {
-  return (
-    <div className={`glass flex flex-col items-center rounded-2xl px-4 py-3 ${className}`}>
-      <span className="gold-number font-display text-[26px] leading-none">
-        {value}
-        {suffix && <span className="text-base"> {suffix}</span>}
-      </span>
-      <span className="mt-1.5 text-[11px] tracking-wide text-lavender300">{label}</span>
-    </div>
-  )
-}
-
 /* ── Decorative motif: dotted orbits + plus marks ────────── */
 export function OrbitDecor({ className = '' }) {
   return (
@@ -109,7 +79,7 @@ export function ToastHost({ children }) {
 }
 
 /* ── Bottom sheet / modal ────────────────────────────────── */
-export function Sheet({ open, onClose, title, children, tone = 'dark', labelledBy }) {
+export function Sheet({ open, onClose, title, children, labelledBy }) {
   useEffect(() => {
     if (!open) return
     const onKey = (e) => e.key === 'Escape' && onClose?.()
@@ -122,7 +92,6 @@ export function Sheet({ open, onClose, title, children, tone = 'dark', labelledB
   }, [open, onClose])
 
   if (!open) return null
-  const paper = tone === 'paper'
   return (
     <div className="fixed inset-0 z-[2000] flex items-end justify-center sm:items-center">
       <div
@@ -134,23 +103,17 @@ export function Sheet({ open, onClose, title, children, tone = 'dark', labelledB
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
-        className={`anim-risein relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl sm:rounded-3xl ${
-          paper
-            ? 'bg-paper text-maroon900 ring-1 ring-maroon900/10'
-            : 'text-white ring-1 ring-white/12'
-        } p-5 pb-8 shadow-2xl shadow-black/50 sm:p-6`}
-        style={paper ? undefined : { background: 'var(--app-sheet)' }}
+        className="anim-risein relative max-h-[88vh] w-full max-w-lg overflow-y-auto rounded-t-3xl p-5 pb-8 text-white shadow-2xl shadow-black/50 ring-1 ring-white/12 sm:rounded-3xl sm:p-6"
+        style={{ background: 'var(--app-sheet)' }}
       >
         <div className="mb-4 flex items-start justify-between gap-4">
-          <h2 id={labelledBy} className={`text-xl font-semibold ${paper ? '' : 'text-white'}`}>
+          <h2 id={labelledBy} className="text-xl font-semibold text-white">
             {title}
           </h2>
           <button
             onClick={onClose}
             aria-label="ปิด"
-            className={`grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full transition-colors ${
-              paper ? 'bg-maroon900/8 hover:bg-maroon900/15' : 'bg-white/10 hover:bg-white/20'
-            }`}
+            className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center rounded-full bg-white/10 transition-colors hover:bg-white/20"
           >
             <Icon name="close" size={20} />
           </button>
@@ -160,10 +123,3 @@ export function Sheet({ open, onClose, title, children, tone = 'dark', labelledB
     </div>
   )
 }
-
-/* ── misc ────────────────────────────────────────────────── */
-export const thaiDate = (ts) =>
-  new Date(ts).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' })
-
-export const mmss = (sec) =>
-  `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}`

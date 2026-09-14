@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────────────────────────
-   กาลวัฒน์ (Kala-Wat) — theme tokens
+   กาลวัฒ (Kala-Wat) — theme tokens
    Brand palette sampled from the Moral Hackathon 2026 poster
    (see CI guide). Treat these as the single source of truth.
-   The two `paper` tints are the only derived values: they exist
-   because the Elder register needs a light, high-contrast
-   surface that the dark poster palette does not provide.
+   The two `paper` tints are the only derived values: they are
+   the light register's surfaces, which the dark poster palette
+   does not provide on its own.
    ───────────────────────────────────────────────────────────── */
 @theme {
   --color-maroon900: #5C1432;
@@ -99,8 +99,8 @@ body {
 
 /* ── Signature motif: เส้นทางภูมิปัญญา (the wisdom trail) ──
    A dotted orbit lifted from the poster. It is reused as the
-   route between checkpoints, the AR radar sweep, and the Elder
-   progress ring — one motif doing three jobs. */
+   trail drawn between checkpoints on the temple map and as the
+   pulse around the stop you are walking to — one motif, two jobs. */
 .orbit-ring {
   border-radius: 9999px;
   border: 1.5px dashed var(--app-orbit);
@@ -164,64 +164,50 @@ body {
 }
 @keyframes dash { to { stroke-dashoffset: -28; } }
 
-/* ── AR reveal, photograph variant ──
-   A studio portrait dropped straight onto a camera frame reads as a
-   sticker. Three cheap tricks seat it in the scene instead: a feathered
-   edge, so the photo's own background never lands as a hard rectangle
-   over the feed; a warm rim glow in the brand gold, which the eye reads
-   as light spilling onto the figure; and a contact shadow, which gives
-   it somewhere to stand. Holds up whether the source PNG is a clean
-   cut-out or a plain studio white — transparent looks best, white still
-   blends, and neither needs the explorer to know which they got. */
-.ar-figure {
-  -webkit-mask-image: radial-gradient(58% 63% at 50% 43%, #000 56%, rgba(0,0,0,.5) 79%, transparent 100%);
-  mask-image: radial-gradient(58% 63% at 50% 43%, #000 56%, rgba(0,0,0,.5) 79%, transparent 100%);
-  /* pulls a studio white balance toward the dusk palette of the app */
-  filter: saturate(.94) contrast(1.05) brightness(.97)
-          drop-shadow(0 14px 22px rgba(43, 15, 48, .6));
+/* ── The narrator's gestures ──
+   The guide is ten photographs of one person, swapped as the script
+   calls for them. A hard cut between two stills reads as a slide
+   change, so each new pose lands with a short settle — enough to sell
+   it as the same body moving, not a different picture arriving. */
+@keyframes posein {
+  from { opacity: .45; transform: translateY(7px) scale(.962); }
+  to   { opacity: 1;   transform: translateY(0)   scale(1); }
 }
 
-.ar-halo {
-  border-radius: 9999px;
-  background: radial-gradient(
-    circle,
-    rgba(255, 211, 162, .32) 0%,
-    rgba(255, 211, 162, .10) 46%,
-    transparent 72%
-  );
+/* ── The scan ──
+   Nothing is being recognised — see ScanFrame. The sweep is the whole
+   reason the tap reads as the app looking at the place rather than as a
+   button that advances a slide, so it runs the full height of the
+   reticle and takes its time about it. */
+@keyframes scanline {
+  0%   { top: 2%;  opacity: 0; }
+  12%  { opacity: 1; }
+  86%  { opacity: 1; }
+  100% { top: 98%; opacity: 0; }
 }
 
-/* The figure resolves out of the haze rather than popping in — the
-   blur lives on a wrapper so it cannot clobber .ar-figure's own filter. */
-@keyframes materialize {
-  from { opacity: 0; transform: scale(.9) translateY(12px); filter: blur(7px); }
-  to   { opacity: 1; transform: scale(1) translateY(0);     filter: blur(0); }
-}
-/* A photograph cannot lip-sync, so "speaking" is carried by the light
-   around her breathing in time instead of a faked mouth. */
-@keyframes speakglow {
-  0%, 100% { opacity: .5; transform: scale(1); }
-  50%      { opacity: 1;  transform: scale(1.07); }
-}
-/* A real person should not bob as far as the cartoon does. */
-@keyframes floatysoft {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-5px); }
+/* ── The performance ──
+   เชิดหนังใหญ่ is danced: the puppeteer's whole body carries the story
+   and a held pose is never dead still. The frames already cut on the
+   beat, so this only keeps the one that is up breathing between cuts. */
+@keyframes showstep {
+  0%, 100% { transform: translateY(0)    rotate(0deg); }
+  50%      { transform: translateY(-7px) rotate(.9deg); }
 }
 
-.anim-sweep       { animation: sweep 3.4s linear infinite; }
-.anim-ring        { animation: pulsering 2.4s ease-out infinite; }
-.anim-floaty      { animation: floaty 3.6s ease-in-out infinite; }
-.anim-risein      { animation: risein .38s cubic-bezier(.2,.7,.3,1) both; }
-.anim-toast       { animation: toastin .25s cubic-bezier(.2,.7,.3,1) both; }
-.anim-dash        { animation: dash 1.6s linear infinite; }
-.anim-materialize { animation: materialize .9s cubic-bezier(.2,.7,.3,1) both; }
-.anim-speakglow   { animation: speakglow 1.9s ease-in-out infinite; }
-.anim-floatysoft  { animation: floatysoft 4.6s ease-in-out infinite; }
+.anim-sweep    { animation: sweep 3.4s linear infinite; }
+.anim-ring     { animation: pulsering 2.4s ease-out infinite; }
+.anim-floaty   { animation: floaty 3.6s ease-in-out infinite; }
+.anim-risein   { animation: risein .38s cubic-bezier(.2,.7,.3,1) both; }
+.anim-toast    { animation: toastin .25s cubic-bezier(.2,.7,.3,1) both; }
+.anim-dash     { animation: dash 1.6s linear infinite; }
+.anim-posein   { animation: posein .34s cubic-bezier(.2,.9,.3,1) both; }
+.anim-scanline { animation: scanline 1.6s cubic-bezier(.45,0,.55,1) infinite; }
+.anim-showstep { animation: showstep .9s ease-in-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   .anim-sweep, .anim-ring, .anim-floaty, .anim-risein, .anim-toast, .anim-dash,
-  .anim-materialize, .anim-speakglow, .anim-floatysoft {
+  .anim-posein, .anim-scanline, .anim-showstep {
     animation: none !important;
   }
   * { transition-duration: 1ms !important; }
@@ -373,28 +359,9 @@ body {
   );
 }
 
-/* ── Leaflet skin ── */
-.leaflet-container { background: #2B0F30; font-family: var(--font-sans); }
-.leaflet-control-attribution {
-  background: rgba(80, 29, 101, .82) !important;
-  color: #B38CC0 !important;
-  font-size: 10px !important;
-}
-.leaflet-control-attribution a { color: #FFD3A2 !important; }
-.leaflet-bar a {
-  background: #501D65 !important;
-  color: #FFD3A2 !important;
-  border-color: rgba(255,255,255,.15) !important;
-}
-.leaflet-bar a:hover { background: #653877 !important; }
-.leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background: #501D65; color: #fff; border: 1px solid rgba(255,255,255,.14);
-}
-.leaflet-popup-content { margin: 10px 12px; font-family: var(--font-sans); }
-
+/* ── The journey screens stay dark whatever the register ──
+   Their text sits over photographs of the place. A light theme has no
+   ground to stand on there, so App pins data-theme="dark" on them and
+   the rules above hand the dark vocabulary back one level deeper. */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* ── Elder register: larger base type, warm paper surface ── */
-.elder-scope { font-size: 18px; line-height: 1.65; }
-.elder-scope h1 { line-height: 1.3; }
