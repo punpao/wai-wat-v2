@@ -1,7 +1,7 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ToastHost } from './components/ui.jsx'
-import { PositionProvider } from './lib/position.jsx'
 import { useTheme } from './lib/theme.js'
+import DeviceFrame from './components/DeviceFrame.jsx'
 import AppHeader from './components/AppHeader.jsx'
 import Home from './pages/Home.jsx'
 import PlaceDetail from './pages/PlaceDetail.jsx'
@@ -11,21 +11,17 @@ import Journey from './pages/Journey.jsx'
 export default function App() {
   const { pathname } = useLocation()
   const { theme } = useTheme()
-  // The journey takes the whole viewport: its text sits over photographs of
+  // The journey takes the whole handset: its text sits over photographs of
   // the place, where a light register has no ground to stand on.
   const immersive = pathname.includes('/journey/')
 
   return (
-    <PositionProvider>
-      <ToastHost>
-        <div
-          data-theme={immersive ? 'dark' : theme}
-          className="relative flex min-h-dvh flex-col text-white"
-          style={{ background: 'var(--app-bg)' }}
-        >
+    <ToastHost>
+      <DeviceFrame data-theme={immersive ? 'dark' : theme}>
+        <div className="device-scroll text-white" style={{ background: 'var(--app-bg)' }}>
           {!immersive && <AppHeader />}
 
-          <main className="flex-1">
+          <main>
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/place/:placeId" element={<PlaceDetail />} />
@@ -35,7 +31,7 @@ export default function App() {
             </Routes>
           </main>
         </div>
-      </ToastHost>
-    </PositionProvider>
+      </DeviceFrame>
+    </ToastHost>
   )
 }

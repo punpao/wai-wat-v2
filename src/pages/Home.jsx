@@ -1,26 +1,28 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { PLACES } from '../data/places.js'
 import { useStore } from '../lib/useStore.js'
-import { OrbitDecor } from '../components/ui.jsx'
+import { Button, OrbitDecor, Sheet } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
 
 /**
- * หน้าแรก — which places you can walk with AR right now.
+ * หน้าแรก — the places you can walk with a guide.
  *
- * The live place is given the full-bleed card because there is exactly one
- * and hiding it in a uniform grid would make the app look emptier than it
- * is. The rest are listed plainly as what is coming, not dressed up as
- * something tappable.
+ * Every place gets the same card, picture and all. Only one of them is open
+ * so far, and the feed does not say which until you tap: a shelf where four
+ * of five items are pre-stamped "not yet" reads as an empty shop, and the
+ * places that are coming deserve to be looked at properly first. What is
+ * open carries a badge; what is not says so when you open it.
  */
 export default function Home() {
   const navigate = useNavigate()
   const state = useStore()
+  const [soon, setSoon] = useState(null)
 
-  const live = PLACES.filter((p) => p.status === 'live')
-  const soon = PLACES.filter((p) => p.status !== 'live')
+  const open = (p) => (p.status === 'live' ? navigate(`/place/${p.id}`) : setSoon(p))
 
   return (
-    <div className="mx-auto max-w-xl pb-10">
+    <div className="pb-10">
       <section className="relative px-5 pb-4 pt-6">
         <OrbitDecor />
         <div className="relative">
@@ -31,34 +33,36 @@ export default function Home() {
             เดินดูของจริง <span className="text-gold200">ให้คนที่นั่นเล่าเอง</span>
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-lavender300">
-            เลือกสถานที่ที่เปิดให้บริการ AR แล้วให้ปราชญ์ในชุมชนพาชมทีละจุด
+            เลือกสถานที่ แล้วให้ปราชญ์ในชุมชนพาชมทีละจุด
           </p>
         </div>
       </section>
 
       <section className="px-5">
         <ul className="space-y-4">
-          {live.map((p) => {
+          {PLACES.map((p) => {
             const done = state.progress[p.id]?.done?.length ?? 0
+            const live = p.status === 'live'
             return (
               <li key={p.id}>
                 <button
-                  onClick={() => navigate(`/place/${p.id}`)}
+                  onClick={() => open(p)}
                   className="group w-full cursor-pointer overflow-hidden rounded-3xl bg-white/6 text-left ring-1 ring-white/12 transition-transform active:scale-[.99]"
                 >
-                  {/* The cover's caption sits on a scrim over a photograph,
-                      so it stays white and gold in the light register too. */}
-                  <div data-theme="dark" className="relative h-52 overflow-hidden">
+                  {/* text over a photograph: stays white and gold in both registers */}
+                  <div data-theme="dark" className="relative h-48 overflow-hidden">
                     <img
                       src={p.cover}
                       alt={p.name}
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#2B0F30] via-[#2B0F30]/25 to-transparent" />
-                    <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-coral500 px-3 py-1.5 text-[11px] font-semibold text-white">
-                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                      เปิดให้เล่น AR แล้ว
-                    </span>
+                    {live && (
+                      <span className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-coral500 px-3 py-1.5 text-[11px] font-semibold text-white">
+                        <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                        เปิดให้เล่น AR แล้ว
+                      </span>
+                    )}
                     <div className="absolute inset-x-4 bottom-3">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gold200">
                         {p.craft}
@@ -72,22 +76,24 @@ export default function Home() {
 
                   <div className="p-4">
                     <p className="text-sm leading-relaxed text-lavender300">{p.teaser}</p>
-                    <div className="mt-3 flex items-center gap-3 text-xs text-lavender300">
-                      <span className="inline-flex items-center gap-1.5">
-                        <Icon name="pin" size={14} />
-                        {p.checkpoints.length} จุด
-                      </span>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Icon name="clock" size={14} />
-                        {p.duration}
-                      </span>
-                      {done > 0 && (
-                        <span className="ml-auto inline-flex items-center gap-1.5 font-semibold text-gold200">
-                          <Icon name="check" size={14} />
-                          เดินแล้ว {done}/{p.checkpoints.length}
+                    {live && (
+                      <div className="mt-3 flex items-center gap-3 text-xs text-lavender300">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Icon name="pin" size={14} />
+                          {p.checkpoints.length} จุด
                         </span>
-                      )}
-                    </div>
+                        <span className="inline-flex items-center gap-1.5">
+                          <Icon name="clock" size={14} />
+                          {p.duration}
+                        </span>
+                        {done > 0 && (
+                          <span className="ml-auto inline-flex items-center gap-1.5 font-semibold text-gold200">
+                            <Icon name="check" size={14} />
+                            เดินแล้ว {done}/{p.checkpoints.length}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </button>
               </li>
@@ -96,32 +102,35 @@ export default function Home() {
         </ul>
       </section>
 
-      <section className="mt-8 px-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-lavender300">
-          กำลังจะเปิดเร็ว ๆ นี้
-        </p>
-        <ul className="mt-3 space-y-2">
-          {soon.map((p) => (
-            <li
-              key={p.id}
-              className="flex items-center gap-3 rounded-2xl bg-white/4 px-4 py-3 ring-1 ring-white/8"
-            >
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/6 text-lavender300">
-                <Icon name="pin" size={18} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-white/80">{p.name}</span>
-                <span className="block truncate text-xs text-lavender300">
-                  {p.craft} · {p.province}
-                </span>
-              </span>
-              <span className="shrink-0 rounded-full bg-white/8 px-2.5 py-1 text-[11px] text-lavender300">
-                เร็ว ๆ นี้
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <Sheet
+        open={!!soon}
+        onClose={() => setSoon(null)}
+        title="ยังไม่เปิดให้เดิน"
+        labelledBy="soon-title"
+      >
+        {soon && (
+          <div className="space-y-4">
+            <img
+              src={soon.cover}
+              alt={soon.name}
+              className="h-36 w-full rounded-2xl object-cover ring-1 ring-white/12"
+            />
+            <div>
+              <h3 className="text-[17px] font-semibold">{soon.name}</h3>
+              <p className="mt-0.5 text-sm text-lavender300">
+                {soon.craft} · {soon.district} {soon.province}
+              </p>
+            </div>
+            <p className="text-[15px] leading-relaxed text-white/85">{soon.teaser}</p>
+            <p className="rounded-xl bg-gold200/12 px-3.5 py-3 text-sm leading-relaxed text-gold200 ring-1 ring-gold200/30">
+              {soon.soonNote}
+            </p>
+            <Button size="lg" className="w-full" onClick={() => setSoon(null)}>
+              เข้าใจแล้ว
+            </Button>
+          </div>
+        )}
+      </Sheet>
     </div>
   )
 }

@@ -1,10 +1,8 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { placeById } from '../data/places.js'
 import { useStore } from '../lib/useStore.js'
-import { usePosition } from '../lib/position.jsx'
-import { distanceM, fmtDistance } from '../lib/geo.js'
-import { Button, useToast } from '../components/ui.jsx'
+import { Button } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
 
 /**
@@ -14,30 +12,22 @@ import Icon from '../components/Icon.jsx'
  * been played, because the script at the theatre is written as the second
  * half of a conversation that starts in the museum.
  *
- * Arrival is decided by GPS, not by tapping. Demo Mode exists because a
- * judge in a conference room cannot stand in ราชบุรี, and it says so on the
- * button rather than pretending to be a real fix.
+ * Nothing here asks the device where it is. This is a demonstration piece —
+ * it gets shown in rooms, on laptops, to people who are not in ราชบุรี — so
+ * the next stop is simply always startable. Gating it on GPS only ever meant
+ * a disabled button and a switch to flip before anyone could see the work.
  */
-const ARRIVE_M = 60
-
 export default function PlaceMap() {
   const { placeId } = useParams()
   const navigate = useNavigate()
   const state = useStore()
-  const toast = useToast()
   const place = placeById(placeId)
-  const { position, isSimulated, geoState, startWatching, simulateNear, clearSim } = usePosition()
-
-  // Ask once on arrival; the browser only shows its prompt if it needs to.
-  useEffect(() => {
-    startWatching()
-  }, [startWatching])
 
   const done = useMemo(() => state.progress[placeId]?.done ?? [], [state.progress, placeId])
 
   if (!place || place.status !== 'live') {
     return (
-      <div className="mx-auto max-w-xl px-5 py-16 text-center">
+      <div className="px-5 py-16 text-center">
         <p className="text-lavender300">ไม่พบเส้นทางนี้</p>
         <Button variant="ghost" className="mt-4" onClick={() => navigate('/')}>
           กลับหน้าแรก
@@ -48,25 +38,10 @@ export default function PlaceMap() {
 
   const target = place.checkpoints.find((c) => !done.includes(c.id)) ?? null
   const allDone = !target
-
-  const metres =
-    position && target ? distanceM(position, [target.lat, target.lng]) : null
-  const arrived = metres != null && metres <= ARRIVE_M
-
-  const status = () => {
-    if (allDone) return { tone: 'good', text: 'เดินครบทุกจุดแล้ว' }
-    if (!position) {
-      if (geoState === 'denied') return { tone: 'warn', text: 'ยังไม่ได้อนุญาตให้ใช้ตำแหน่ง' }
-      if (geoState === 'unsupported') return { tone: 'warn', text: 'เครื่องนี้ไม่รองรับการหาตำแหน่ง' }
-      return { tone: 'idle', text: 'กำลังหาตำแหน่งของคุณ…' }
-    }
-    if (arrived) return { tone: 'good', text: 'ถึงจุดนี้แล้ว พร้อมสแกน' }
-    return { tone: 'idle', text: `อยู่ห่างจากจุดนี้ ${fmtDistance(metres)}` }
-  }
-  const st = status()
+  const go = (cpId) => navigate(`/place/${place.id}/journey/${cpId}`)
 
   return (
-    <div className="mx-auto max-w-xl pb-56">
+    <div className="pb-48">
       <div className="flex items-center gap-3 px-4 pt-4">
         <button
           onClick={() => navigate(`/place/${place.id}`)}
@@ -114,11 +89,7 @@ export default function PlaceMap() {
               <button
                 key={cp.id}
                 disabled={locked}
-                onClick={() =>
-                  ok
-                    ? navigate(`/place/${place.id}/journey/${cp.id}`)
-                    : document.getElementById('map-target')?.scrollIntoView({ behavior: 'smooth' })
-                }
+                onClick={() => go(cp.id)}
                 aria-label={cp.name}
                 className="absolute -translate-x-1/2 -translate-y-full cursor-pointer disabled:cursor-not-allowed"
                 style={{ left: `${cp.pin.x}%`, top: `${cp.pin.y}%` }}
@@ -136,7 +107,7 @@ export default function PlaceMap() {
                           : 'bg-[#2B0F30]/85 text-lavender300'
                     }`}
                   >
-                    {ok ? <Icon name="check" size={18} stroke={2.6} /> : locked ? cp.order : cp.order}
+                    {ok ? <Icon name="check" size={18} stroke={2.6} /> : cp.order}
                   </span>
                   <span className="relative mt-1 whitespace-nowrap rounded-full bg-[#2B0F30]/90 px-2 py-0.5 text-[10px] font-semibold text-white ring-1 ring-white/15">
                     {cp.short}
@@ -161,7 +132,11 @@ export default function PlaceMap() {
             >
               <span
                 className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold ${
-                  ok ? 'bg-gold200 text-maroon900' : isTarget ? 'bg-coral500 text-white' : 'bg-white/10 text-lavender300'
+                  ok
+                    ? 'bg-gold200 text-maroon900'
+                    : isTarget
+                      ? 'bg-coral500 text-white'
+                      : 'bg-white/10 text-lavender300'
                 }`}
               >
                 {ok ? <Icon name="check" size={16} stroke={2.6} /> : cp.order}
@@ -174,100 +149,54 @@ export default function PlaceMap() {
               </span>
               {ok && (
                 <button
-                  onClick={() => navigate(`/place/${place.id}/journey/${cp.id}`)}
+                  onClick={() => go(cp.id)}
                   className="shrink-0 cursor-pointer rounded-full bg-white/10 px-3 py-1.5 text-xs font-semibold text-white"
                 >
                   ฟังซ้ำ
                 </button>
               )}
-              {!ok && !isTarget && (
-                <span className="shrink-0 text-xs text-lavender300">ล็อกอยู่</span>
-              )}
+              {!ok && !isTarget && <span className="shrink-0 text-xs text-lavender300">ล็อกอยู่</span>}
             </li>
           )
         })}
       </ol>
 
-      {/* the action, pinned where a walking visitor can reach it */}
       <div
-        id="map-target"
         className="fixed inset-x-0 bottom-0 z-[900] border-t border-white/10 px-4 pb-5 pt-4 backdrop-blur-md"
         style={{
           background: 'var(--app-chrome)',
           paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))',
         }}
       >
-        <div className="mx-auto max-w-xl">
-          {allDone ? (
-            <>
-              <p className="mb-3 text-center text-sm text-gold200">เดินครบทุกจุดแล้ว</p>
-              <Button variant="ghost" size="lg" className="w-full" onClick={() => navigate(`/place/${place.id}`)}>
-                กลับไปหน้าสถานที่
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="mb-3 flex items-start gap-2.5">
-                <span
-                  className={`mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full ${
-                    st.tone === 'good'
-                      ? 'bg-gold200 text-maroon900'
-                      : st.tone === 'warn'
-                        ? 'bg-coral500 text-white'
-                        : 'bg-white/12 text-gold200'
-                  }`}
-                >
-                  <Icon name={st.tone === 'good' ? 'check' : 'compass'} size={16} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold leading-snug">{target.name}</span>
-                  <span className="block text-xs text-lavender300">
-                    {st.text}
-                    {isSimulated && ' · โหมดสาธิต'}
-                  </span>
-                </span>
-              </div>
-
-              <Button
-                size="lg"
-                className="w-full"
-                disabled={!arrived}
-                onClick={() => navigate(`/place/${place.id}/journey/${target.id}`)}
-              >
-                <Icon name="scan" size={22} />
-                {arrived ? `เริ่มสแกนที่${target.short}` : 'เดินไปที่จุดนี้ก่อน'}
-              </Button>
-
-              <div className="mt-2 flex gap-2">
-                {geoState !== 'live' && !isSimulated && (
-                  <button
-                    onClick={() => {
-                      startWatching()
-                      toast('กำลังขอตำแหน่งอีกครั้ง', 'info')
-                    }}
-                    className="flex-1 cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-lavender300 transition-colors hover:text-white"
-                  >
-                    ลองหาตำแหน่งอีกครั้ง
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    if (isSimulated) {
-                      clearSim()
-                      toast('กลับไปใช้ตำแหน่งจริง', 'info')
-                    } else {
-                      simulateNear(target, 20)
-                      toast('โหมดสาธิต: จำลองว่ายืนอยู่ที่จุดนี้', 'good')
-                    }
-                  }}
-                  className="flex-1 cursor-pointer rounded-full px-3 py-2 text-xs font-semibold text-lavender300 transition-colors hover:text-white"
-                >
-                  {isSimulated ? 'ปิดโหมดสาธิต' : 'โหมดสาธิต: จำลองว่าถึงจุดนี้'}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        {allDone ? (
+          <>
+            <p className="mb-3 text-center text-sm text-gold200">เดินครบทุกจุดแล้ว</p>
+            <Button
+              variant="ghost"
+              size="lg"
+              className="w-full"
+              onClick={() => navigate(`/place/${place.id}`)}
+            >
+              กลับไปหน้าสถานที่
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className="mb-3 flex items-start gap-2.5">
+              <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/12 text-gold200">
+                <Icon name="pin" size={16} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold leading-snug">{target.name}</span>
+                <span className="block text-xs text-lavender300">{target.blurb}</span>
+              </span>
+            </div>
+            <Button size="lg" className="w-full" onClick={() => go(target.id)}>
+              <Icon name="scan" size={22} />
+              เริ่มสแกนที่{target.short}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   )

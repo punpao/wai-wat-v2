@@ -3,14 +3,19 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         {
           "key": "Permissions-Policy",
-          "value": "camera=(self), geolocation=(self), gyroscope=(self), accelerometer=(self), magnetometer=(self)"
+          "value": "gyroscope=(self), accelerometer=(self), magnetometer=(self)"
         }
       ]
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { beatsFor, checkpointById, placeById } from '../data/places.js'
 import { storage } from '../lib/storage.js'
@@ -15,11 +15,16 @@ import Icon from '../components/Icon.jsx'
  * The walk itself — one checkpoint's script, played beat by beat.
  *
  * This page owns the two things that have to survive a beat change: the
- * scene behind everything, and the puppet standing in front of it. Every
+ * scene behind everything, and whatever is standing in front of it. Every
  * scene in the checkpoint is mounted at once and cross-faded, which both
  * preloads them and means a swap never shows a white gap; the puppet is
  * keyed on its own image, so walking from the reveal into the photo keeps
- * the exact angle the visitor left it at instead of springing back.
+ * the exact angle it was left at instead of springing back.
+ *
+ * Where each AR element sits comes from the beat, in percentages of the
+ * frame, lifted off the placement references that shipped with the artwork.
+ * The frame is a fixed phone crop and every scene photograph was cut to it,
+ * so a percentage means the same thing on every screen.
  *
  * There is no camera and no computer vision anywhere in here. The "camera
  * view" is a photograph of the spot the visitor is standing in front of,
@@ -38,10 +43,13 @@ export default function Journey() {
     if (!p || (p.done ?? []).includes(checkpointId)) return 0
     return Math.min(p.beat?.[checkpointId] ?? 0, Math.max(beats.length - 1, 0))
   })
-  const [booth, setBooth] = useState(null) // null = closed; otherwise the captured puppet pose
+  const [booth, setBooth] = useState(false)
   const [booking, setBooking] = useState(false)
   const [moved, setMoved] = useState(false)
   const puppetRef = useRef(null)
+  // stable, so the puppet's motion listener is not torn down and re-armed
+  // every time this page re-renders
+  const onFirstMove = useCallback(() => setMoved(true), [])
 
   /* Every scene used in this checkpoint, and which one each beat sits on —
      a beat without its own scene (the ending card) keeps the last one. */
@@ -79,7 +87,7 @@ export default function Journey() {
 
   if (!place || !cp || !beats.length) {
     return (
-      <div className="mx-auto max-w-xl px-5 py-16 text-center">
+      <div className="px-5 py-16 text-center">
         <p className="text-lavender300">ไม่พบจุดนี้ในเส้นทาง</p>
         <Button variant="ghost" className="mt-4" onClick={() => navigate('/')}>
           กลับหน้าแรก
@@ -92,185 +100,154 @@ export default function Journey() {
   const leave = () => navigate(`/place/${placeId}/map`)
 
   return (
-    // The tour is designed for a phone held up in front of the thing being
-    // talked about. On a wider screen it keeps that column rather than
-    // stretching a portrait photograph across a desk monitor.
-    <div className="fixed inset-0 z-0 flex justify-center bg-[#0E040F]">
-      <div className="relative h-full w-full max-w-xl overflow-hidden bg-[#150618] shadow-2xl shadow-black/60">
-        {/* the scene — a photograph of where the visitor is standing */}
-        {scenes.map((src) => (
-          <img
-            key={src}
-            src={src}
-            alt=""
-            aria-hidden={src !== scene}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
-              src === scene ? 'opacity-100' : 'opacity-0'
-            }`}
-          />
-        ))}
-        <div
-          className={`pointer-events-none absolute inset-0 transition-colors duration-500 ${
-            ending
-              ? 'bg-[#150618]/75'
-              : 'bg-gradient-to-b from-[#150618]/55 via-transparent to-[#150618]/70'
+    <div className="absolute inset-0 z-0 overflow-hidden bg-[#150618]">
+      {/* the scene — a photograph of where the visitor is standing */}
+      {scenes.map((src) => (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          aria-hidden={src !== scene}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${
+            src === scene ? 'opacity-100' : 'opacity-0'
           }`}
         />
+      ))}
+      <div
+        className={`pointer-events-none absolute inset-0 transition-colors duration-500 ${
+          ending
+            ? 'bg-[#150618]/75'
+            : 'bg-gradient-to-b from-[#150618]/45 via-transparent to-[#150618]/65'
+        }`}
+      />
 
-        {/* what is standing in the scene */}
-        {beat.puppet && !ending && (
-          <InteractivePuppet
-            key={beat.puppet}
-            ref={puppetRef}
-            src={beat.puppet}
-            width="min(78vw, 340px)"
-            onFirstMove={() => setMoved(true)}
-          />
-        )}
-        {beat.frames && <PuppetShow frames={beat.frames} />}
+      {/* what is standing in the scene */}
+      {beat.puppet && !ending && (
+        <InteractivePuppet
+          key={beat.puppet}
+          ref={puppetRef}
+          src={beat.puppet}
+          at={beat.puppetAt}
+          onFirstMove={onFirstMove}
+        />
+      )}
+      {beat.performers && <PuppetShow performers={beat.performers} />}
 
-        {/* chrome */}
-        <div
-          className="absolute inset-x-0 top-0 z-30 flex items-center gap-3 px-4 pb-3 pt-4"
-          style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      {/* chrome */}
+      <div
+        className="absolute inset-x-0 top-0 z-30 flex items-center gap-3 px-4 pb-3 pt-4"
+        style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+      >
+        <button
+          onClick={leave}
+          aria-label="ออกจากเส้นทาง"
+          className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-black/50 text-white backdrop-blur-sm"
         >
-          <button
-            onClick={leave}
-            aria-label="ออกจากเส้นทาง"
-            className="grid h-10 w-10 shrink-0 cursor-pointer place-items-center rounded-full bg-black/50 text-white backdrop-blur-sm"
-          >
-            <Icon name="close" size={18} />
-          </button>
-          <div className="min-w-0 flex-1 rounded-full bg-black/45 px-3.5 py-2 backdrop-blur-sm">
-            <p className="truncate text-[13px] font-semibold leading-tight text-white">
-              {cp.name}
-            </p>
-            <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/20">
-              <div
-                className="h-full rounded-full bg-gold200 transition-[width] duration-500"
-                style={{ width: `${((i + 1) / beats.length) * 100}%` }}
-              />
-            </div>
+          <Icon name="close" size={18} />
+        </button>
+        <div className="min-w-0 flex-1 rounded-full bg-black/45 px-3.5 py-2 backdrop-blur-sm">
+          <p className="truncate text-[13px] font-semibold leading-tight text-white">{cp.name}</p>
+          <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-white/20">
+            <div
+              className="h-full rounded-full bg-gold200 transition-[width] duration-500"
+              style={{ width: `${((i + 1) / beats.length) * 100}%` }}
+            />
           </div>
         </div>
+      </div>
 
-        {/* the beat */}
-        {beat.type === 'scan' && (
-          <ScanFrame
-            key={beat.id}
-            title={beat.title}
-            hint={beat.hint}
-            cta={beat.cta}
-            onScanned={next}
-          />
-        )}
+      {/* the beat */}
+      {beat.type === 'scan' && (
+        <ScanFrame key={beat.id} title={beat.title} hint={beat.hint} cta={beat.cta} onScanned={next} />
+      )}
 
-        {beat.type === 'narrate' && (
-          <NarratorSpeech key={beat.id} lines={beat.lines} onDone={next} />
-        )}
+      {beat.type === 'narrate' && (
+        <NarratorSpeech key={beat.id} lines={beat.lines} onDone={next} at={beat.at} />
+      )}
 
-        {beat.type === 'reveal' && (
-          <>
-            {beat.interactHint && !moved && (
-              <div className="pointer-events-none absolute inset-x-0 top-[22%] z-30 flex justify-center">
-                <span className="anim-floaty rounded-full bg-black/55 px-4 py-2 text-xs font-semibold text-gold200 backdrop-blur-sm">
-                  {beat.interactHint}
-                </span>
-              </div>
-            )}
-            <NarratorSpeech
-              key={beat.id}
-              lines={beat.lines}
-              onDone={next}
-              tap="panel"
-              figureSize={168}
-            />
-          </>
-        )}
+      {beat.type === 'reveal' && (
+        <>
+          {beat.interactHint && !moved && (
+            <div className="pointer-events-none absolute inset-x-0 top-[13%] z-30 flex justify-center px-4">
+              <span className="anim-floaty rounded-full bg-black/60 px-4 py-2 text-center text-xs font-semibold text-gold200 backdrop-blur-sm">
+                {beat.interactHint}
+              </span>
+            </div>
+          )}
+          <NarratorSpeech key={beat.id} lines={beat.lines} onDone={next} tap="panel" at={beat.at} />
+        </>
+      )}
 
-        {beat.type === 'photo' && (
-          <>
-            <NarratorSpeech
-              key={beat.id}
-              lines={beat.lines}
-              onDone={() =>
-                setBooth(puppetRef.current?.current?.() ?? { x: 0, y: 0, rot: 0 })
-              }
-              cta="ถ่ายรูป"
-              tap="panel"
-              figureSize={168}
-            />
-            <button
-              onClick={next}
-              className="absolute right-4 z-40 cursor-pointer rounded-full bg-black/50 px-3.5 py-2 text-xs font-semibold text-lavender300 backdrop-blur-sm"
-              style={{
-                top: 'calc(max(1rem, env(safe-area-inset-top)) + 3.5rem)',
-              }}
-            >
-              ข้ามการถ่ายรูป
-            </button>
-          </>
-        )}
-
-        {beat.type === 'show' && (
+      {beat.type === 'photo' && (
+        <>
           <NarratorSpeech
             key={beat.id}
             lines={beat.lines}
-            onDone={next}
+            onDone={() => setBooth(true)}
+            cta="ถ่ายรูป"
             tap="panel"
-            figureSize={150}
+            at={beat.at}
           />
-        )}
+          <button
+            onClick={next}
+            className="absolute right-4 z-40 cursor-pointer rounded-full bg-black/50 px-3.5 py-2 text-xs font-semibold text-lavender300 backdrop-blur-sm"
+            style={{ top: 'calc(max(1rem, env(safe-area-inset-top)) + 3.5rem)' }}
+          >
+            ข้ามการถ่ายรูป
+          </button>
+        </>
+      )}
 
-        {ending && (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center px-6 text-center">
-            <span className="grid h-20 w-20 place-items-center rounded-full bg-gold200 text-maroon900">
-              <Icon name="check" size={40} stroke={2.6} />
-            </span>
-            <h2 className="mt-4 text-2xl font-semibold text-white">
-              {beat.next ? `${cp.short}เรียบร้อย` : 'จบเส้นทางแล้ว'}
-            </h2>
-            <p className="mt-2 max-w-xs text-sm leading-relaxed text-lavender300">
-              {beat.next
-                ? 'เดินต่อไปที่จุดถัดไปในแผนที่ เดี๋ยวลุงวิรัชรออยู่'
-                : 'ขอบคุณที่มาเดินกับลุงวิรัชจนจบ ถ้าอยากลองจับตัวหนังจริง มีรอบเวิร์กช็อปให้จองด้วย'}
-            </p>
+      {beat.type === 'show' && (
+        <NarratorSpeech key={beat.id} lines={beat.lines} onDone={next} tap="panel" at={beat.at} />
+      )}
 
-            <div className="mt-6 w-full max-w-xs space-y-2">
-              {beat.next ? (
-                <Button size="lg" className="w-full" onClick={leave}>
-                  <Icon name="pin" size={20} />
-                  ไปที่จุดถัดไป
+      {ending && (
+        <div className="absolute inset-0 z-30 flex flex-col items-center justify-center px-6 text-center">
+          <span className="grid h-20 w-20 place-items-center rounded-full bg-gold200 text-maroon900">
+            <Icon name="check" size={40} stroke={2.6} />
+          </span>
+          <h2 className="mt-4 text-2xl font-semibold text-white">
+            {beat.next ? `${cp.short}เรียบร้อย` : 'จบเส้นทางแล้ว'}
+          </h2>
+          <p className="mt-2 max-w-xs text-sm leading-relaxed text-lavender300">
+            {beat.next
+              ? 'เดินต่อไปที่จุดถัดไปในแผนที่ เดี๋ยวลุงวิรัชรออยู่'
+              : 'ขอบคุณที่มาเดินกับลุงวิรัชจนจบ ถ้าอยากลองจับตัวหนังจริง มีรอบเวิร์กช็อปให้จองด้วย'}
+          </p>
+
+          <div className="mt-6 w-full max-w-xs space-y-2">
+            {beat.next ? (
+              <Button size="lg" className="w-full" onClick={leave}>
+                <Icon name="pin" size={20} />
+                ไปที่จุดถัดไป
+              </Button>
+            ) : (
+              <>
+                <Button size="lg" className="w-full" onClick={() => setBooking(true)}>
+                  <Icon name="calendar" size={20} />
+                  จองรอบเวิร์กช็อป
                 </Button>
-              ) : (
-                <>
-                  <Button size="lg" className="w-full" onClick={() => setBooking(true)}>
-                    <Icon name="calendar" size={20} />
-                    จองรอบเวิร์กช็อป
-                  </Button>
-                  <Button variant="ghost" className="w-full" onClick={() => navigate('/')}>
-                    กลับหน้าแรก
-                  </Button>
-                </>
-              )}
-            </div>
+                <Button variant="ghost" className="w-full" onClick={() => navigate('/')}>
+                  กลับหน้าแรก
+                </Button>
+              </>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-        {booth && (
-          <PhotoBooth
-            scene={beat.scene}
-            puppet={beat.puppet}
-            puppetState={booth}
-            onClose={() => {
-              setBooth(null)
-              next()
-            }}
-          />
-        )}
+      {booth && beat.post && (
+        <PhotoBooth
+          post={beat.post}
+          onClose={() => {
+            setBooth(false)
+            next()
+          }}
+        />
+      )}
 
-        <BookingSheet open={booking} onClose={() => setBooking(false)} />
-      </div>
+      <BookingSheet open={booking} onClose={() => setBooking(false)} />
     </div>
   )
 }

@@ -21,7 +21,7 @@ export default function PlaceDetail() {
 
   if (!place || place.status !== 'live') {
     return (
-      <div className="mx-auto max-w-xl px-5 py-16 text-center">
+      <div className="px-5 py-16 text-center">
         <p className="text-lavender300">ยังไม่เปิดให้บริการ AR ที่นี่</p>
         <Button variant="ghost" className="mt-4" onClick={() => navigate('/')}>
           กลับหน้าแรก
@@ -35,7 +35,7 @@ export default function PlaceDetail() {
   const finished = done.length >= place.checkpoints.length
 
   return (
-    <div className="mx-auto max-w-xl pb-36">
+    <div className="pb-36">
       {/* Same as the home card: this block is text over a photograph, so it
           keeps the dark vocabulary whichever register the page is in. */}
       <div data-theme="dark" className="relative h-64 overflow-hidden">
@@ -105,7 +105,9 @@ export default function PlaceDetail() {
                     {ok ? <Icon name="check" size={18} stroke={2.4} /> : cp.order}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-semibold leading-snug">{cp.name}</span>
+                    <span className="block text-[15px] font-semibold leading-snug">
+                      {cp.name}
+                    </span>
                     <span className="mt-0.5 block text-xs leading-relaxed text-lavender300">
                       {cp.blurb}
                     </span>
@@ -133,19 +135,17 @@ export default function PlaceDetail() {
           paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))',
         }}
       >
-        <div className="mx-auto max-w-xl">
-          <Button
-            size="lg"
-            className="w-full"
-            onClick={() => navigate(`/place/${place.id}/map`)}
-          >
-            <Icon name="scan" size={22} />
-            {finished ? 'เดินเส้นทาง AR อีกครั้ง' : started ? 'ไปต่อในเส้นทาง AR' : 'เริ่มเส้นทาง AR'}
-          </Button>
-          <p className="mt-2 text-center text-[11px] text-lavender300">
-            เปิดแผนที่ในวัด แล้วเดินไปที่จุดแรกเพื่อเริ่มสแกน
-          </p>
-        </div>
+        <Button size="lg" className="w-full" onClick={() => navigate(`/place/${place.id}/map`)}>
+          <Icon name="scan" size={22} />
+          {finished
+            ? 'เดินเส้นทาง AR อีกครั้ง'
+            : started
+              ? 'ไปต่อในเส้นทาง AR'
+              : 'เริ่มเส้นทาง AR'}
+        </Button>
+        <p className="mt-2 text-center text-[11px] text-lavender300">
+          เปิดแผนที่ในวัด แล้วเดินไปที่จุดแรกเพื่อเริ่มสแกน
+        </p>
       </div>
     </div>
   )

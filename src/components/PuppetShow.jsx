@@ -1,35 +1,33 @@
-import { useEffect, useState } from 'react'
-
 /**
  * The performance behind the screen.
  *
- * Four stills of one puppeteer, cycled. Real เชิดหนังใหญ่ is danced rather
- * than waved — the puppeteer's whole body carries the story — so the frames
- * hold long enough to read as steps being planted, not as a flipbook, and
- * each one drifts slightly while it is up so a held pose is never dead still.
+ * Two puppeteers, each placed where the artwork's own reference frame put
+ * them, and each swaying on its own period. A real เชิด is danced — the
+ * whole body carries the story — so the panels never hold still, but they
+ * also never move in lockstep, which is what a single shared animation
+ * would give and what would read instantly as a loop.
+ *
+ * The pivot sits near the performer's feet rather than the middle of the
+ * picture, because the sticks are held low and that is where the motion
+ * actually hinges.
  */
-export default function PuppetShow({ frames, playing = true, height = '56%' }) {
-  const [i, setI] = useState(0)
-
-  useEffect(() => {
-    if (!playing || !frames?.length) return
-    const t = setInterval(() => setI((v) => (v + 1) % frames.length), 900)
-    return () => clearInterval(t)
-  }, [playing, frames])
-
-  if (!frames?.length) return null
+export default function PuppetShow({ performers }) {
+  if (!performers?.length) return null
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-[12%] z-20 flex justify-center" style={{ height }}>
-      {frames.map((src, n) => (
+    <div className="pointer-events-none absolute inset-0 z-10" aria-hidden="true">
+      {performers.map((p) => (
         <img
-          key={src}
-          src={src}
+          key={p.src}
+          src={p.src}
           alt=""
-          aria-hidden={n !== i}
-          className={`absolute h-full w-auto object-contain transition-opacity duration-200 ${
-            n === i ? 'anim-showstep opacity-100' : 'opacity-0'
-          }`}
+          className={`absolute w-auto select-none ${p.sway === 'b' ? 'anim-swayb' : 'anim-swaya'}`}
+          style={{
+            height: `${p.h}%`,
+            left: `${p.left}%`,
+            top: `${p.top}%`,
+            filter: 'drop-shadow(0 10px 18px rgba(0,0,0,.45))',
+          }}
         />
       ))}
     </div>
