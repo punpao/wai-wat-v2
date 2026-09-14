@@ -255,6 +255,15 @@ body {
   50%      { transform: rotate(-2.8deg) translateY(2px); }
 }
 
+/* ── Between stops ──
+   The handover card carries on by itself, so it has to show that it is
+   going to. The bar is the wait made visible — the same 2.4s the timer
+   holds for, so the card never sits there full and still. */
+@keyframes handover {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
+}
+
 /* ── The guide arrives ──
    He is a photograph standing in a room he was not photographed in. The
    only thing that seats him there is light: he resolves out of nothing
@@ -275,10 +284,12 @@ body {
 .anim-swaya    { animation: swaya 2.9s ease-in-out infinite; transform-origin: 50% 88%; }
 .anim-swayb    { animation: swayb 3.4s ease-in-out infinite; transform-origin: 50% 90%; }
 .anim-ghostin  { animation: ghostin .6s cubic-bezier(.2,.8,.3,1) both; }
+.anim-handover { animation: handover 2.4s linear both; display: block; }
 
 @media (prefers-reduced-motion: reduce) {
   .anim-sweep, .anim-ring, .anim-floaty, .anim-risein, .anim-toast, .anim-dash,
-  .anim-posein, .anim-scanline, .anim-swaya, .anim-swayb, .anim-ghostin {
+  .anim-posein, .anim-scanline, .anim-swaya, .anim-swayb, .anim-ghostin,
+  .anim-handover {
     animation: none !important;
   }
   * { transition-duration: 1ms !important; }
