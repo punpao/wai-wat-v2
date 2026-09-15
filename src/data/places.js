@@ -28,9 +28,14 @@ export const NARRATOR = {
   id: 'lung-kanon',
   name: 'ลุงวิรัช',
   role: 'ปราชญ์ชุมชนวัดขนอน',
+  /* Everything he can do. Four photographs, cut from one sheet and
+     normalised on head size so a pose swap moves his arms rather than
+     resizing the man. A line asking for anything else gets `explain`. */
+  poses: ['explain', 'wai', 'point_right', 'point_left'],
 }
 
-export const narratorPose = (pose) => `/kanon/narrator/${pose}.webp`
+export const narratorPose = (pose) =>
+  `/kanon/narrator/${NARRATOR.poses.includes(pose) ? pose : 'explain'}.webp`
 
 /* Narrator placement, in percent of the frame. Height is what is set rather
    than width: every pose was rendered to the same figure height, so sizing
@@ -56,10 +61,10 @@ const kanonJourney = {
       at: CENTRE_STAGE,
       lines: [
         { pose: 'wai', text: 'สวัสดีครับ ลุงวิรัชเองครับ อยู่วัดขนอนมาตั้งแต่เกิด' },
-        { pose: 'explain', text: 'ที่นี่คือพิพิธภัณฑ์หนังใหญ่วัดขนอน เก็บตัวหนังดั้งเดิมไว้ ๓๑๓ ตัว' },
-        { pose: 'think', text: 'หนังใหญ่คือการเล่าเรื่องด้วยเงา ใช้หนังวัวทั้งผืนมาฉลุเป็นตัวละคร' },
-        { pose: 'explain', text: 'สมัยรัชกาลที่ ๕ หลวงปู่กล่อมชวนช่างในหมู่บ้านมาสร้างไว้ ชุดแรกคือหนุมานถวายแหวน' },
-        { pose: 'point_thumb', text: 'ที่พิเศษคือวัดเราไม่ได้เก็บไว้ในตู้เฉย ๆ เรายังสอนเด็กให้เชิดต่อจนวันนี้' },
+        { pose: 'point_left', text: 'ที่นี่คือพิพิธภัณฑ์หนังใหญ่วัดขนอน เก็บตัวหนังดั้งเดิมไว้ ๓๑๓ ตัว' },
+        { pose: 'explain', text: 'หนังใหญ่คือการเล่าเรื่องด้วยเงา ใช้หนังวัวทั้งผืนมาฉลุเป็นตัวละคร' },
+        { pose: 'point_right', text: 'สมัยรัชกาลที่ ๕ หลวงปู่กล่อมชวนช่างในหมู่บ้านมาสร้างไว้ ชุดแรกคือหนุมานถวายแหวน' },
+        { pose: 'explain', text: 'ที่พิเศษคือวัดเราไม่ได้เก็บไว้ในตู้เฉย ๆ เรายังสอนเด็กให้เชิดต่อจนวันนี้' },
       ],
     },
     {
@@ -68,9 +73,9 @@ const kanonJourney = {
       scene: '/kanon/scene/spot_before.jpg',
       at: CENTRE_STAGE,
       lines: [
-        { pose: 'point_far', text: 'เดินตามลุงเข้ามาข้างในก่อนครับ' },
-        { pose: 'point', text: 'ตรงนี้เป็นตู้จัดแสดงตัวหนัง ดูตัวกลมใหญ่ในตู้ทางขวาสิครับ' },
-        { pose: 'point_close', text: 'ลองสแกนตัวนั้นดู เดี๋ยวมันมีอะไรให้ดู' },
+        { pose: 'explain', text: 'เดินตามลุงเข้ามาข้างในก่อนครับ' },
+        { pose: 'point_right', text: 'ตรงนี้เป็นตู้จัดแสดงตัวหนัง ดูตัวกลมใหญ่ในตู้ทางขวาสิครับ' },
+        { pose: 'point_right', text: 'ลองสแกนตัวนั้นดู เดี๋ยวมันมีอะไรให้ดู' },
       ],
     },
     {
@@ -90,9 +95,9 @@ const kanonJourney = {
       puppetAt: { w: 52, left: 46, top: 30 },
       at: BESIDE_THE_CASE,
       lines: [
-        { pose: 'explain', text: 'นี่คือตัวหนังใหญ่ของจริงครับ ตัวเดียวใช้หนังวัวเกือบทั้งผืน' },
-        { pose: 'think', text: 'ช่างต้องฉลุทีละรู ตัวใหญ่ขนาดนี้ทำกันเป็นเดือน' },
-        { pose: 'point', text: 'ลองเอียงเครื่องดูสิครับ หรือจะใช้นิ้วลากก็ได้ จับมันขยับได้เหมือนตอนคนเชิดจับจริง ๆ' },
+        { pose: 'point_right', text: 'นี่คือตัวหนังใหญ่ของจริงครับ ตัวเดียวใช้หนังวัวเกือบทั้งผืน' },
+        { pose: 'explain', text: 'ช่างต้องฉลุทีละรู ตัวใหญ่ขนาดนี้ทำกันเป็นเดือน' },
+        { pose: 'point_right', text: 'ลองเอียงเครื่องดูสิครับ หรือจะใช้นิ้วลากก็ได้ จับมันขยับได้เหมือนตอนคนเชิดจับจริง ๆ' },
       ],
       interactHint: 'เอียงเครื่อง หรือลากเพื่อขยับตัวหนัง',
     },
@@ -105,7 +110,7 @@ const kanonJourney = {
       at: BESIDE_THE_CASE,
       // the finished post, supplied ready-made with the artwork
       post: '/kanon/photo/social_post.jpg',
-      lines: [{ pose: 'thumbs_up', text: 'ถ่ายรูปคู่กับตัวหนังเก็บไว้หน่อยสิครับ' }],
+      lines: [{ pose: 'point_right', text: 'ถ่ายรูปคู่กับตัวหนังเก็บไว้หน่อยสิครับ' }],
     },
     {
       id: 'm-lead-out',
@@ -113,8 +118,8 @@ const kanonJourney = {
       scene: '/kanon/scene/museum.jpg',
       at: CENTRE_STAGE,
       lines: [
-        { pose: 'point_both', text: 'ดูในพิพิธภัณฑ์พอหอมปากหอมคอแล้ว ทีนี้ไปดูของจริงกัน' },
-        { pose: 'point_far', text: 'เดินออกไปทางนั้น จะเจอโรงมหรสพหนังใหญ่ เดี๋ยวลุงตามไปเจอ' },
+        { pose: 'explain', text: 'ดูในพิพิธภัณฑ์พอหอมปากหอมคอแล้ว ทีนี้ไปดูของจริงกัน' },
+        { pose: 'point_right', text: 'เดินออกไปทางนั้น จะเจอโรงมหรสพหนังใหญ่ เดี๋ยวลุงตามไปเจอ' },
       ],
     },
     { id: 'm-done', type: 'done', next: 'cp-theater' },
@@ -136,11 +141,11 @@ const kanonJourney = {
       scene: '/kanon/scene/theater_outside.jpg',
       at: CENTRE_STAGE,
       lines: [
-        { pose: 'explain', text: 'มาถึงโรงมหรสพแล้วครับ ที่นี่แสดงจริงทุกเสาร์' },
-        { pose: 'think', text: 'หนังใหญ่ไม่เหมือนหนังตะลุงนะครับ ตัวหนังใหญ่กว่ามาก และขยับไม่ได้' },
+        { pose: 'point_left', text: 'มาถึงโรงมหรสพแล้วครับ ที่นี่แสดงจริงทุกเสาร์' },
+        { pose: 'explain', text: 'หนังใหญ่ไม่เหมือนหนังตะลุงนะครับ ตัวหนังใหญ่กว่ามาก และขยับไม่ได้' },
         { pose: 'explain', text: 'ตัวหนังแข็งทั้งตัว คนเชิดจึงต้องเต้นเอง ใช้ทั้งตัวเล่าเรื่องแทน' },
-        { pose: 'point_thumb', text: 'เอกลักษณ์คือคนเชิด ปี่พาทย์ และคนพากย์ ต้องไปพร้อมกันเป๊ะ ๆ' },
-        { pose: 'point_far', text: 'เข้าไปข้างในเลยครับ เดี๋ยวมีของดีให้ดู' },
+        { pose: 'explain', text: 'เอกลักษณ์คือคนเชิด ปี่พาทย์ และคนพากย์ ต้องไปพร้อมกันเป๊ะ ๆ' },
+        { pose: 'point_right', text: 'เข้าไปข้างในเลยครับ เดี๋ยวมีของดีให้ดู' },
       ],
     },
     {
@@ -164,10 +169,11 @@ const kanonJourney = {
       // performers own the lower two thirds, and standing him among them
       // hides the one thing this stop exists to show.
       at: { h: 26, cx: 50, top: 9 },
+      interactHint: 'ลากคนเชิด หรือเอียงเครื่องเพื่อขยับตัวหนัง',
       lines: [
-        { pose: 'explain', text: 'ดูเงาหลังจอสิครับ นั่นคือการเชิดจริง' },
-        { pose: 'think', text: 'คนเชิดต้องย่อตัว ก้าวตามจังหวะกลอง ไม่ใช่แค่ยกหนังขึ้นเฉย ๆ' },
-        { pose: 'thumbs_up', text: 'กว่าจะเชิดได้สวยแบบนี้ เด็กวัดเราฝึกกันเป็นปีครับ' },
+        { pose: 'point_left', text: 'ดูเงาหลังจอสิครับ นั่นคือการเชิดจริง' },
+        { pose: 'explain', text: 'คนเชิดต้องย่อตัว ก้าวตามจังหวะกลอง ไม่ใช่แค่ยกหนังขึ้นเฉย ๆ' },
+        { pose: 'explain', text: 'กว่าจะเชิดได้สวยแบบนี้ เด็กวัดเราฝึกกันเป็นปีครับ' },
       ],
     },
     { id: 't-done', type: 'done', next: null },

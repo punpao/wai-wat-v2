@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { NARRATOR, narratorPose } from '../data/places.js'
+import Icon from './Icon.jsx'
 
 /**
  * The guide, standing in the frame.
@@ -24,7 +25,7 @@ import { NARRATOR, narratorPose } from '../data/places.js'
    sized from its height — so translateX(-50%) would centre a box the figure
    is not actually centred in, and shove him off the side of the frame.
    Declaring the ratio makes the box's width follow its height exactly. */
-const POSE_RATIO = '740 / 520'
+const POSE_RATIO = '720 / 552'
 
 export function NarratorFigure({ pose = 'explain', at, className = '' }) {
   const [bump, setBump] = useState(0)
@@ -82,7 +83,7 @@ export function NarratorFigure({ pose = 'explain', at, className = '' }) {
  * full-screen tap target would eat every drag aimed at it, so the panel
  * takes the taps and leaves the rest of the screen to the puppet.
  */
-export default function NarratorSpeech({ lines, onDone, cta = 'ต่อไป', tap = 'full', at }) {
+export default function NarratorSpeech({ lines, onDone, cta = 'ต่อไป', tap = 'full', at, hint }) {
   const [i, setI] = useState(0)
   useEffect(() => setI(0), [lines])
 
@@ -118,6 +119,16 @@ export default function NarratorSpeech({ lines, onDone, cta = 'ต่อไป',
         }`}
         style={{ paddingBottom: 'max(1.75rem, env(safe-area-inset-bottom))' }}
       >
+        {/* How to handle whatever is on screen. It lives in the panel
+            rather than floating over the scene because there is no band of
+            the frame that is free in every scene — on the stage it landed
+            squarely on the guide's face. */}
+        {hint && (
+          <p className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-gold200/14 px-3 py-1.5 text-[11px] font-semibold text-gold200 ring-1 ring-gold200/30">
+            <Icon name="compass" size={13} className="shrink-0" />
+            {hint}
+          </p>
+        )}
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-gold200">
           {NARRATOR.name} · {NARRATOR.role}
         </p>

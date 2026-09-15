@@ -8,6 +8,7 @@ import InteractivePuppet from '../components/InteractivePuppet.jsx'
 import PhotoBooth from '../components/PhotoBooth.jsx'
 import PuppetShow from '../components/PuppetShow.jsx'
 import BookingSheet from '../components/BookingSheet.jsx'
+import TiltPrompt from '../components/TiltPrompt.jsx'
 import { Button } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
 
@@ -181,7 +182,12 @@ export default function Journey() {
           onFirstMove={onFirstMove}
         />
       )}
-      {beat.performers && <PuppetShow performers={beat.performers} />}
+      {beat.performers && (
+        <PuppetShow performers={beat.performers} onFirstMove={onFirstMove} />
+      )}
+
+      {/* one ask per screen, however many things on it can be moved */}
+      {(beat.puppet || beat.performers) && !ending && <TiltPrompt />}
 
       {/* chrome — above the beats, including the full-bleed handover card,
           so the way out of the tour is never covered by the tour */}
@@ -222,16 +228,14 @@ export default function Journey() {
       )}
 
       {beat.type === 'reveal' && (
-        <>
-          {beat.interactHint && !moved && (
-            <div className="pointer-events-none absolute inset-x-0 top-[13%] z-30 flex justify-center px-4">
-              <span className="anim-floaty rounded-full bg-black/60 px-4 py-2 text-center text-xs font-semibold text-gold200 backdrop-blur-sm">
-                {beat.interactHint}
-              </span>
-            </div>
-          )}
-          <NarratorSpeech key={beat.id} lines={beat.lines} onDone={next} tap="panel" at={beat.at} />
-        </>
+        <NarratorSpeech
+          key={beat.id}
+          lines={beat.lines}
+          onDone={next}
+          tap="panel"
+          at={beat.at}
+          hint={!moved ? beat.interactHint : undefined}
+        />
       )}
 
       {beat.type === 'photo' && (
@@ -255,7 +259,14 @@ export default function Journey() {
       )}
 
       {beat.type === 'show' && (
-        <NarratorSpeech key={beat.id} lines={beat.lines} onDone={next} tap="panel" at={beat.at} />
+        <NarratorSpeech
+          key={beat.id}
+          lines={beat.lines}
+          onDone={next}
+          tap="panel"
+          at={beat.at}
+          hint={!moved ? beat.interactHint : undefined}
+        />
       )}
 
       {/* between stops — marks the boundary, then carries on by itself */}

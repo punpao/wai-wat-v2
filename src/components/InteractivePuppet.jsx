@@ -1,26 +1,27 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import Icon from './Icon.jsx'
+import { onDeviceTilt } from '../lib/tilt.js'
 
 /**
- * The puppet that lifts out of the case and can be pushed around.
+ * A leather panel that can be pushed around — in the display case, or in the
+ * hands of a puppeteer on the stage.
  *
- * A real หนังใหญ่ panel is rigid — the puppeteer moves the whole thing, it
- * never bends. So this does not deform: it swings on its sticks like the
- * genuine article, tilting into whatever pushes it and settling back under
+ * A real หนังใหญ่ panel is rigid: the puppeteer moves the whole thing, it
+ * never bends. So this does not deform. It swings on its sticks like the
+ * genuine article, leaning into whatever pushes it and settling back under
  * spring and damping when let go.
  *
- * Two things can push it. Tilting the phone is the one worth having, because
- * that is how you hold a panel up: the device's own gamma/beta feed the same
- * spring the finger does, so the puppet leans as the handset leans. iOS will
- * only hand over motion after an explicit tap, so there is a button for it,
- * and dragging always works whether or not the sensor ever appears.
+ * Two things push it. Tilting the phone is the one worth having, because
+ * that is how you hold a panel up — the handset's roll and pitch feed the
+ * same spring a finger does, so letting go of a tilted phone settles against
+ * the tilt rather than snapping to dead centre. Dragging always works,
+ * whether or not the sensor ever appears.
  *
- * The parent needs the live transform for other things on screen, so the
- * current pose is exposed through a ref rather than lifted into state —
- * sixty setStates a second while dragging would be a bad trade.
+ * `idle` names a CSS sway for something that is already being danced. It
+ * lives on a wrapper so it composes with the drag instead of fighting it:
+ * the performer keeps their step while the panel answers the finger.
  */
 const InteractivePuppet = forwardRef(function InteractivePuppet(
-  { src, at, onFirstMove },
+  { src, at, idle, alt = 'ตัวหนังใหญ่', onFirstMove },
   ref,
 ) {
   const wrapRef = useRef(null)
@@ -28,15 +29,11 @@ const InteractivePuppet = forwardRef(function InteractivePuppet(
   const moved = useRef(false)
 
   // position, tilt and their velocities live outside React for the raf loop
-  const s = useRef({ x: 0, y: 0, vx: 0, rot: 0, vrot: 0, dragging: false, px: 0, py: 0, tx: 0, trot: 0 })
-  /* The handset angle this puppet calls "level". It has to outlive the
-     listener: the effect that attaches it re-runs whenever the parent
-     re-renders, and a base kept in that closure would be re-taken from
-     whatever angle the phone happened to be at — so a tilt left would read
-     as level, and returning to level would read as a tilt right. */
-  const level = useRef(null)
+  const s = useRef({
+    x: 0, y: 0, vx: 0, rot: 0, vrot: 0,
+    dragging: false, px: 0, py: 0, tx: 0, ty: 0, trot: 0,
+  })
   const [entered, setEntered] = useState(false)
-  const [motion, setMotion] = useState('idle') // idle | live | denied | unavailable
 
   useImperativeHandle(ref, () => ({
     current: () => ({ ...s.current }),
@@ -54,71 +51,31 @@ const InteractivePuppet = forwardRef(function InteractivePuppet(
     return () => clearTimeout(t)
   }, [])
 
-  /* ── the phone's own tilt ───────────────────────────────────────────── */
-  const attachMotion = useCallback(() => {
-    const onTilt = (e) => {
-      // gamma is the left/right roll, beta the front/back pitch
-      if (e.gamma == null && e.beta == null) return
-      const g = e.gamma ?? 0
-      const b = e.beta ?? 0
-      if (!level.current) level.current = { g, b }
-      const dg = Math.max(-28, Math.min(28, g - level.current.g))
-      const db = Math.max(-22, Math.min(22, b - level.current.b))
-      const st = s.current
-      st.tx = dg * 2.6
-      st.trot = dg * 0.42
-      st.ty = db * 0.9
-      if (Math.abs(dg) > 3) nudged()
-      setMotion('live')
-    }
-    window.addEventListener('deviceorientation', onTilt)
-    return () => window.removeEventListener('deviceorientation', onTilt)
-  }, [nudged])
+  useEffect(
+    () =>
+      onDeviceTilt((dg, db) => {
+        const st = s.current
+        st.tx = dg * 2.6
+        st.ty = db * 0.9
+        st.trot = dg * 0.42
+        if (Math.abs(dg) > 3) nudged()
+      }),
+    [nudged],
+  )
 
-  useEffect(() => {
-    if (typeof DeviceOrientationEvent === 'undefined') {
-      setMotion('unavailable')
-      return
-    }
-    // iOS gates the sensor behind a user gesture; everyone else just gets it
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') return
-    return attachMotion()
-  }, [attachMotion])
-
-  const askForMotion = async () => {
-    try {
-      const res = await DeviceOrientationEvent.requestPermission()
-      if (res === 'granted') {
-        attachMotion()
-        setMotion('live')
-      } else {
-        setMotion('denied')
-      }
-    } catch {
-      setMotion('denied')
-    }
-  }
-
-  const needsPermission =
-    motion === 'idle' &&
-    typeof DeviceOrientationEvent !== 'undefined' &&
-    typeof DeviceOrientationEvent.requestPermission === 'function'
-
-  /* ── the spring ─────────────────────────────────────────────────────── */
   useEffect(() => {
     let raf = 0
     const tick = () => {
       const st = s.current
       if (!st.dragging) {
-        // home is wherever the phone is currently tilted to, so letting go
-        // of a tilted handset settles against the tilt rather than to zero
+        // home is wherever the phone is currently tilted to
         st.vx += (st.tx - st.x) * 0.06
         st.vx *= 0.86
         st.x += st.vx
         st.vrot += (st.trot - st.rot) * 0.08
         st.vrot *= 0.88
         st.rot += st.vrot
-        st.y += ((st.ty ?? 0) - st.y) * 0.1
+        st.y += (st.ty - st.y) * 0.1
       }
       if (imgRef.current) {
         imgRef.current.style.transform =
@@ -159,43 +116,42 @@ const InteractivePuppet = forwardRef(function InteractivePuppet(
     wrapRef.current?.releasePointerCapture?.(e.pointerId)
   }
 
-  const { w = 52, left = 46, top = 30 } = at ?? {}
+  // sized by width in the case, by height on the stage — whichever the
+  // placement reference measured is the one that stays true
+  const { w, h, left = 0, top = 0 } = at ?? {}
 
   return (
-    <>
-      <div
-        ref={wrapRef}
-        onPointerDown={down}
-        onPointerMove={move}
-        onPointerUp={up}
-        onPointerCancel={up}
-        className="absolute z-20 cursor-grab touch-none active:cursor-grabbing"
-        style={{ width: `${w}%`, left: `${left}%`, top: `${top}%` }}
-      >
+    <div
+      ref={wrapRef}
+      onPointerDown={down}
+      onPointerMove={move}
+      onPointerUp={up}
+      onPointerCancel={up}
+      className="absolute z-20 cursor-grab touch-none active:cursor-grabbing"
+      style={{
+        width: w != null ? `${w}%` : undefined,
+        height: h != null ? `${h}%` : undefined,
+        left: `${left}%`,
+        top: `${top}%`,
+      }}
+    >
+      <span className={`block h-full w-full ${idle ? `anim-${idle}` : ''}`}>
         <img
           ref={imgRef}
           src={src}
-          alt="ตัวหนังใหญ่"
+          alt={alt}
           draggable={false}
-          className="w-full select-none drop-shadow-[0_22px_34px_rgba(0,0,0,0.55)]"
+          className={`select-none drop-shadow-[0_18px_30px_rgba(0,0,0,0.5)] ${
+            h != null ? 'h-full w-auto max-w-none' : 'w-full'
+          }`}
           style={{
             opacity: entered ? 1 : 0,
             scale: entered ? '1' : '0.72',
             transition: 'opacity .55s ease, scale .55s cubic-bezier(.2,1.3,.4,1)',
           }}
         />
-      </div>
-
-      {needsPermission && (
-        <button
-          onClick={askForMotion}
-          className="absolute left-1/2 top-[20%] z-30 flex -translate-x-1/2 cursor-pointer items-center gap-2 rounded-full bg-black/60 px-4 py-2.5 text-xs font-semibold text-gold200 backdrop-blur-sm"
-        >
-          <Icon name="compass" size={16} />
-          เปิดให้เอียงเครื่องเพื่อขยับตัวหนัง
-        </button>
-      )}
-    </>
+      </span>
+    </div>
   )
 })
 
